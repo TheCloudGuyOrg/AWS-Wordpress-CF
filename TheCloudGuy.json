@@ -1,0 +1,139 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "AWS Cloud Formation Template to startup a Wordpress Site",
+
+  "Parameters" : {
+    "EnvironmentSize": {
+      "Description" : "Size of Wordpress Site",
+      "Type" : "String",
+      "Default" : "Small",
+      "AllowedValues" : ["Small", "Medium", "Large"]
+		},
+    "KeyPair": {
+      "Description" : "Amazon EC2 Key Pair",
+      "Type" : "AWS::EC2::KeyPair::KeyName"
+    },
+    "KMSKey": {
+      "Description" : "Amazon KMS Encryption Key",
+      "Type" : "String"
+    },
+    "DestinationBucketName": {
+      "Description" : "Destination of the S3 Bucket Logs",
+      "Type" : "String"
+    },
+    "LogFilePrefix": {
+      "Description" : "Prefix for the S3 Bucket Logs",
+      "Type" : "String"
+    },
+    "DatabaseName" : {
+      "Type" : "String"
+    },
+    "DatabaseUser" : {
+      "Type" : "String"
+    },
+    "DatabasePassword" : {
+      "Type" : "String",
+      "NoEcho" : true
+    }
+  },
+
+  "Mappings" : {
+    "RegionMap": {
+			"us-east-1": {
+				"AMALINUX": "ami-b70554c8"
+			},
+			"us-east-2": {
+				"AMALINUX": "ami-8c122be9"
+			},
+			"us-west-1": {
+				"AMALINUX": "ami-e0ba5c83"
+			},
+			"us-west-2": {
+				"AMALINUX": "ami-a9d09ed1"
+			}
+		},
+		"InstanceSize": {
+			"Small": {
+				"EC2": "t2.micro",
+				"DB": "db.t2.micro"
+			},
+			"Medium": {
+				"EC2": "t2.small",
+				"DB": "db.t2.small"
+			},
+			"Large": {
+				"EC2": "t2.medium",
+				"DB": "db.t2.medium"
+			}
+		}
+  },
+
+  "Resources" : {
+    "DB" : {
+        "Type" : "AWS::RDS::DBInstance",
+        "Properties" : {
+          "AllocatedStorage" : "20",
+          "AllowMajorVersionUpgrade" : true,
+          "AutoMinorVersionUpgrade" : true,
+          "CopyTagsToSnapshot" : true,
+          "DBInstanceClass" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "DB"]},
+          "DBInstanceIdentifier" : {"Ref" : "DatabaseName"},
+          "DBName" : {"Ref" : "DatabaseName"},
+          "Engine" : "MySQL",
+          "MasterUsername" : {"Ref" : "DatabaseUser"},
+          "MasterUserPassword" : {"Ref" : "DatabasePassword"},
+          "MultiAZ" : true,
+          "PubliclyAccessible" : false,
+          "StorageType" : "gp2"
+        }
+    },
+    "EC2" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+          "ImageId" : {"Fn::FindInMap" : ["RegionMap", {"Ref" : "AWS::Region"}, "AMALINUX"]},
+          "InstanceType" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "EC2"]},
+          "KeyName" : {"Ref" : "KeyPair"},
+          "UserData" : {"Fn::Base64" : {"Fn::Join" : ["", [
+						"#!/bin/bash", "\n",
+						"yum install httpd php mysql php-mysql -y", "\n",
+						"yum update -y", "\n",
+						"chkconfig httpd on", "\n",
+						"service httpd start", "\n",
+						"cd /var/www/html", "\n",
+						"wget https://wordpress.org/latest.tar.gz", "\n",
+						"tar -zxvf latest.tar.gz --strip 1", "\n",
+						"rm latest.tar.gz", "\n",
+						"cp wp-config-sample.php wp-config.php", "\n",
+            "sed -i 's/database_name_here/", {"Ref" : "DatabaseName"}, "/g' wp-config.php", "\n",
+						"sed -i 's/localhost/", {"Fn::GetAtt" : ["DB", "Endpoint.Address"]}, "/g' wp-config.php", "\n",
+						"sed -i 's/username_here/", {"Ref" : "DatabaseUser"}, "/g' wp-config.php", "\n",
+						"sed -i 's/password_here/", {"Ref" : "DatabasePassword"},"/g' wp-config.php", "\n"
+        ]]}}
+      }
+    },
+    "S3" : {
+        "Type" : "AWS::S3::Bucket",
+        "Properties" : {
+          "LoggingConfiguration" : {
+            "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
+            "LogFilePrefix" : {"Ref" : "LogFilePrefix"}
+          },
+          "VersioningConfiguration" : {
+            "Status" : "Enabled"
+          },
+          "BucketEncryption" : {
+            "ServerSideEncryptionConfiguration" : [{
+              "ServerSideEncryptionByDefault" : {
+                "KMSMasterKeyID" : {"Ref" : "KMSKey"},
+                "SSEAlgorithm" : "aws:kms"
+                }
+              }]
+            }
+          }
+        }
+      },
+
+  "Outputs" : {
+  }
+}
