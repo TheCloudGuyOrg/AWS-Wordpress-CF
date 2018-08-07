@@ -1,0 +1,34 @@
+[
+  {
+    "ParameterKey" : "EnvironmentSize",
+    "ParameterValue" : "ENVSIZE-REPLACE"
+  },
+  {
+    "ParameterKey" : "KeyPair",
+    "ParameterValue" : "KEYPAIR-REPLACE"
+  },
+  {
+    "ParameterKey" : "KMSKey",
+    "ParameterValue" : "KMSKEY-REPLACE"
+  },
+  {
+    "ParameterKey" : "DestinationBucketName",
+    "ParameterValue" : "LOGBUCKET-REPLACE"
+  },
+  {
+    "ParameterKey" : "LogFilePrefix",
+    "ParameterValue" : "LOGPREFIX-REPLACE"
+  },
+  {
+    "ParameterKey" : "DatabaseName",
+    "ParameterValue" : "DBNAME-REPLACE"
+  },
+  {
+    "ParameterKey" : "DatabaseUser",
+    "ParameterValue" : "DBUSER-REPLACE"
+  },
+  {
+    "ParameterKey" : "DatabasePassword",
+    "ParameterValue" : "DBPASSWORD-REPLACE"
+  }
+]
