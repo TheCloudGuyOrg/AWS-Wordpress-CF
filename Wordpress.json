@@ -27,14 +27,23 @@
       "Type" : "String"
     },
     "DatabaseName" : {
-      "Type" : "String"
+      "Type" : "String",
+      "MinLength" : "1",
+      "MaxLength" : "64",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
     },
     "DatabaseUser" : {
-      "Type" : "String"
+      "Type" : "String",
+      "MinLength" : "1",
+      "MaxLength" : "16",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
     },
     "DatabasePassword" : {
       "Type" : "String",
-      "NoEcho" : true
+      "MinLength" : "8",
+			"MaxLength" : "41",
+			"NoEcho" : "true",
+			"AllowedPattern" : "[a-zA-Z0-9]*"
     }
   },
 
@@ -72,6 +81,7 @@
   "Resources" : {
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
+        "DeletionPolicy" : "Delete",
         "Properties" : {
           "AllocatedStorage" : "20",
           "AllowMajorVersionUpgrade" : true,
@@ -90,6 +100,7 @@
     },
     "EC2" : {
       "Type" : "AWS::EC2::Instance",
+      "DeletionPolicy" : "Delete",
       "Properties" : {
           "ImageId" : {"Fn::FindInMap" : ["RegionMap", {"Ref" : "AWS::Region"}, "AMALINUX"]},
           "InstanceType" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "EC2"]},
@@ -114,6 +125,7 @@
     },
     "S3" : {
         "Type" : "AWS::S3::Bucket",
+        "DeletionPolicy" : "Delete",
         "Properties" : {
           "LoggingConfiguration" : {
             "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
