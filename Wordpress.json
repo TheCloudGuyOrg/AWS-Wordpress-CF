@@ -4,6 +4,11 @@
   "Description" : "AWS Cloud Formation Template to startup a Wordpress Site",
 
   "Parameters" : {
+    "SnapToRestore" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "snap id to restore"
+    },
     "EnvironmentSize": {
       "Description" : "Size of Wordpress Site",
       "Type" : "String",
@@ -64,6 +69,9 @@
       "ConstraintDescription" : "must be either true or false."
     }
   },
+  "Conditions" : {
+		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]}
+	},
 
   "Mappings" : {
     "RegionMap": {
@@ -107,11 +115,12 @@
           "CopyTagsToSnapshot" : true,
           "DBInstanceClass" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "DB"]},
           "DBInstanceIdentifier" : {"Ref" : "DatabaseName"},
-          "DBName" : {"Ref" : "DatabaseName"},
+          "DBName": {"Fn::If" : ["isRestore", {"Ref" : "AWS::NoValue"}, {"Ref" : "DatabaseName"}]},
           "Engine" : "MySQL",
           "MultiAZ" : { "Ref": "MultiAZDatabase"},
-          "MasterUsername" : {"Ref" : "DatabaseUser"},
-          "MasterUserPassword" : {"Ref" : "DatabasePassword"},
+          "MasterUsername": {"Fn::If" : ["isRestore", {"Ref" : "AWS::NoValue"}, {"Ref" : "DatabaseUser"}]},
+          "MasterUserPassword": {"Fn::If" : ["isRestore", {"Ref" : "AWS::NoValue"}, {"Ref" : "DatabasePassword"}]},
+          "DBSnapshotIdentifier" : {"Fn::If" : ["isRestore", {"Ref" : "SnapToRestore"}, {"Ref" : "AWS::NoValue"}]},
           "PubliclyAccessible" : false,
           "StorageType" : "gp2"
         }
