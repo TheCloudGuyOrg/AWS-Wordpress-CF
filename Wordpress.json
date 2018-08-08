@@ -257,5 +257,13 @@
       },
 
   "Outputs" : {
+    "wproot" : {
+      "Description" : "Access URL for wordpress",
+      "Value" : {"Fn::Join" : ["",["http://", {"Fn::GetAtt" : ["EC2", "PublicIp"]}, "/wordpress"]]}
+    },
+    "wpadmin" : {
+      "Description" : "Admin Login URL - if restoring from snap, ALWAYS use this URL first",
+      "Value" : {"Fn::Join" : ["",["http://", {"Fn::GetAtt" : ["EC2", "PublicIp"]}, "/wordpress/wp-login.php"]]}
+    }
   }
 }
