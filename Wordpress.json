@@ -8,42 +8,60 @@
       "Description" : "Size of Wordpress Site",
       "Type" : "String",
       "Default" : "Small",
-      "AllowedValues" : ["Small", "Medium", "Large"]
+      "AllowedValues" : ["Small", "Medium", "Large"],
+      "ConstraintDescription" : "Size of Environment"
 		},
     "KeyPair": {
       "Description" : "Amazon EC2 Key Pair",
-      "Type" : "AWS::EC2::KeyPair::KeyName"
+      "Type" : "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
     },
     "KMSKey": {
       "Description" : "Amazon KMS Encryption Key",
-      "Type" : "String"
+      "Type" : "String",
+      "ConstraintDescription" : "must be the name of an existing KMS Key."
     },
     "DestinationBucketName": {
       "Description" : "Destination of the S3 Bucket Logs",
-      "Type" : "String"
+      "Type" : "String",
+      "ConstraintDescription" : "must be the name of an existing S3 Bucket."
     },
     "LogFilePrefix": {
       "Description" : "Prefix for the S3 Bucket Logs",
-      "Type" : "String"
+      "Type" : "String",
+      "ConstraintDescription" : "Name of log file prefix"
     },
     "DatabaseName" : {
+      "Description" : "The WordPress database name",
       "Type" : "String",
       "MinLength" : "1",
       "MaxLength" : "64",
-      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
     },
     "DatabaseUser" : {
+      "Description" : "The WordPress database admin account username",
       "Type" : "String",
       "MinLength" : "1",
       "MaxLength" : "16",
-      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
     },
     "DatabasePassword" : {
+      "Description" : "The WordPress database admin account password",
       "Type" : "String",
       "MinLength" : "8",
 			"MaxLength" : "41",
 			"NoEcho" : "true",
-			"AllowedPattern" : "[a-zA-Z0-9]*"
+			"AllowedPattern" : "[a-zA-Z0-9]*",
+      "ConstraintDescription" : "must contain only alphanumeric characters."
+    },
+    "MultiAZDatabase": {
+      "Default": "false",
+      "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance",
+      "Type": "String",
+      "AllowedValues" : [ "true", "false" ],
+      "ConstraintDescription" : "must be either true or false."
     }
   },
 
@@ -91,9 +109,9 @@
           "DBInstanceIdentifier" : {"Ref" : "DatabaseName"},
           "DBName" : {"Ref" : "DatabaseName"},
           "Engine" : "MySQL",
+          "MultiAZ" : { "Ref": "MultiAZDatabase"},
           "MasterUsername" : {"Ref" : "DatabaseUser"},
           "MasterUserPassword" : {"Ref" : "DatabasePassword"},
-          "MultiAZ" : true,
           "PubliclyAccessible" : false,
           "StorageType" : "gp2"
         }
@@ -105,22 +123,114 @@
           "ImageId" : {"Fn::FindInMap" : ["RegionMap", {"Ref" : "AWS::Region"}, "AMALINUX"]},
           "InstanceType" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "EC2"]},
           "KeyName" : {"Ref" : "KeyPair"},
-          "UserData" : {"Fn::Base64" : {"Fn::Join" : ["", [
-						"#!/bin/bash", "\n",
-						"yum install httpd php mysql php-mysql -y", "\n",
-						"yum update -y", "\n",
-						"chkconfig httpd on", "\n",
-						"service httpd start", "\n",
-						"cd /var/www/html", "\n",
-						"wget https://wordpress.org/latest.tar.gz", "\n",
-						"tar -zxvf latest.tar.gz --strip 1", "\n",
-						"rm latest.tar.gz", "\n",
-						"cp wp-config-sample.php wp-config.php", "\n",
-            "sed -i 's/database_name_here/", {"Ref" : "DatabaseName"}, "/g' wp-config.php", "\n",
-						"sed -i 's/localhost/", {"Fn::GetAtt" : ["DB", "Endpoint.Address"]}, "/g' wp-config.php", "\n",
-						"sed -i 's/username_here/", {"Ref" : "DatabaseUser"}, "/g' wp-config.php", "\n",
-						"sed -i 's/password_here/", {"Ref" : "DatabasePassword"},"/g' wp-config.php", "\n"
-        ]]}}
+          "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+                         "#!/bin/bash -xe\n",
+                         "yum update -y aws-cfn-bootstrap\n",
+
+                         "/opt/aws/bin/cfn-init -v ",
+                         "         --stack ", { "Ref" : "AWS::StackName" },
+                         "         --resource EC2",
+                         "         --configsets wordpress_install ",
+                         "         --region ", { "Ref" : "AWS::Region" }, "\n",
+
+                         "/opt/aws/bin/cfn-signal -e $? ",
+                         "         --stack ", { "Ref" : "AWS::StackName" },
+                         "         --resource EC2",
+                         "         --region ", { "Ref" : "AWS::Region" }, "\n"
+          ]]}}
+        },
+      "CreationPolicy" : {
+        "ResourceSignal" : {
+          "Count" : "1",
+          "Timeout" : "PT15M"
+        }
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {
+            "wordpress_install" : ["install_cfn", "install_wordpress" ]
+          },
+          "install_cfn" : {
+            "files": {
+              "/etc/cfn/cfn-hup.conf": {
+                "content": { "Fn::Join": [ "", [
+                  "[main]\n",
+                  "stack=", { "Ref": "AWS::StackId" }, "\n",
+                  "region=", { "Ref": "AWS::Region" }, "\n"
+                ]]},
+                "mode"  : "000400",
+                "owner" : "root",
+                "group" : "root"
+              },
+              "/etc/cfn/hooks.d/cfn-auto-reloader.conf": {
+                "content": { "Fn::Join": [ "", [
+                  "[cfn-auto-reloader-hook]\n",
+                  "triggers=post.update\n",
+                  "path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                  "action=/opt/aws/bin/cfn-init -v ",
+                          "         --stack ", { "Ref" : "AWS::StackName" },
+                          "         --resource EC2",
+                          "         --configsets wordpress_install ",
+                          "         --region ", { "Ref" : "AWS::Region" }, "\n"
+                ]]},
+                "mode"  : "000400",
+                "owner" : "root",
+                "group" : "root"
+              }
+            },
+            "services" : {
+              "sysvinit" : {
+                "cfn-hup" : {
+                  "enabled" : "true",
+                  "ensureRunning" : "true",
+                  "files" : ["/etc/cfn/cfn-hup.conf", "/etc/cfn/hooks.d/cfn-auto-reloader.conf"]}
+              }
+            }
+          },
+
+          "install_wordpress" : {
+            "packages" : {
+              "yum" : {
+                "php"       : [],
+                "php-mysql" : [],
+                "mysql"     : [],
+                "httpd"     : []
+              }
+            },
+            "sources" : {
+              "/var/www/html" : "http://wordpress.org/latest.tar.gz"
+            },
+            "files" : {
+              "/tmp/create-wp-config" : {
+                "content" : { "Fn::Join" : [ "", [
+                  "#!/bin/bash\n",
+                  "cp /var/www/html/wordpress/wp-config-sample.php /var/www/html/wordpress/wp-config.php\n",
+                  "sed -i \"s/'database_name_here'/'",{ "Ref" : "DatabaseName" }, "'/g\" wp-config.php\n",
+                  "sed -i \"s/'username_here'/'",{ "Ref" : "DatabaseUser" }, "'/g\" wp-config.php\n",
+                  "sed -i \"s/'password_here'/'",{ "Ref" : "DatabasePassword" }, "'/g\" wp-config.php\n",
+                  "sed -i \"s/'localhost'/'",{ "Fn::GetAtt" : [ "DB", "Endpoint.Address" ] }, "'/g\" wp-config.php\n"
+                ]]},
+                "mode" : "000500",
+                "owner" : "root",
+                "group" : "root"
+              }
+            },
+            "commands" : {
+              "01_configure_wordpress" : {
+                "command" : "/tmp/create-wp-config",
+                "cwd" : "/var/www/html/wordpress"
+              }
+            },
+            "services" : {
+              "sysvinit" : {
+                "httpd" : {
+                  "enabled" : "true",
+                  "ensureRunning" : "true"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "S3" : {
