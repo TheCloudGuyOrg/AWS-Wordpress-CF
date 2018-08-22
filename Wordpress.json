@@ -76,16 +76,16 @@
   "Mappings" : {
     "RegionMap": {
 			"us-east-1": {
-				"AMALINUX": "ami-b70554c8"
+				"AMALINUX": "ami-c481fad3"
 			},
 			"us-east-2": {
-				"AMALINUX": "ami-8c122be9"
+				"AMALINUX": "ami-71ca9114"
 			},
 			"us-west-1": {
-				"AMALINUX": "ami-e0ba5c83"
+				"AMALINUX": "ami-de347abe"
 			},
 			"us-west-2": {
-				"AMALINUX": "ami-a9d09ed1"
+				"AMALINUX": "ami-b04e92d0"
 			}
 		},
 		"InstanceSize": {
@@ -142,8 +142,19 @@
   						" --configsets wordpress",
   						" --region ", {"Ref" : "AWS::Region"}, "\n",
 
-  						"yum update -y", "\n"
+              "yum update -y", "\n",
+
+              "/opt/aws/bin/cfn-signal -e $?",
+              " --stack ", {"Ref" : "AWS::StackName"},
+              " --resource EC2",
+              " --region ", {"Ref" : "AWS::Region"}, "\n"
   				]]}}
+        },
+      "CreationPolicy" : {
+        "ResourceSignal" : {
+          "Count" : "1",
+          "Timeout" : "PT15M"
+          }
         },
         "Metadata" : {
   				"AWS::CloudFormation::Init" : {
