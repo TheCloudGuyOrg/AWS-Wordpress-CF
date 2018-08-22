@@ -65,10 +65,10 @@
       "Default": "false",
       "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance",
       "Type": "String",
-      "AllowedValues" : [ "true", "false" ],
       "ConstraintDescription" : "must be either true or false."
     }
   },
+
   "Conditions" : {
 		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]}
 	},
@@ -107,7 +107,7 @@
   "Resources" : {
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
-        "DeletionPolicy" : "Delete",
+        "DeletionPolicy" : "Snapshot",
         "Properties" : {
           "AllocatedStorage" : "20",
           "AllowMajorVersionUpgrade" : true,
@@ -268,7 +268,7 @@
     },
     "S3" : {
         "Type" : "AWS::S3::Bucket",
-        "DeletionPolicy" : "Delete",
+        "DeletionPolicy" : "Retain",
         "Properties" : {
           "LoggingConfiguration" : {
             "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
