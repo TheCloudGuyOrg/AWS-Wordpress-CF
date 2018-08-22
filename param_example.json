@@ -31,8 +31,7 @@
     "ParameterKey" : "DatabasePassword",
     "ParameterValue" : "DBPASSWORD-REPLACE"
   },
-    {
-      "ParameterKey" : "MultiAZDatabase",
-      "ParameterValue" : "false"
-    }
-]
+  {
+    "ParameterKey" : "MultiAZDatabase",
+    "ParameterValue" : "false"
+  }
