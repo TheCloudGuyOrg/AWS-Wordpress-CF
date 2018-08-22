@@ -66,6 +66,38 @@
       "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance",
       "Type": "String",
       "ConstraintDescription" : "must be either true or false."
+    },
+    "AuthKey": {
+      "Description" : "Paste in Salt Value for AUTH_KEY",
+      "Type": "String"
+    },
+    "SecureAuthKey": {
+      "Description" : "Paste in Salt Value for SECURE_AUTH_KEY",
+      "Type": "String"
+    },
+    "LoggedInKey": {
+      "Description" : "Paste in Salt Value for LOGGED_IN_KEY",
+      "Type": "String"
+    },
+    "NonceKey": {
+      "Description" : "Paste in Salt Value for NONCE_KEY",
+      "Type": "String"
+    },
+    "AuthSalt": {
+      "Description" : "Paste in Salt Value for AUTH_SALT",
+      "Type": "String"
+    },
+    "SecureAuthSalt": {
+      "Description" : "Paste in Salt Value for SECURE_AUTH_SALT",
+      "Type": "String"
+    },
+    "LoggedInSalt": {
+      "Description" : "Paste in Salt Value for LOGGED_IN_SALT",
+      "Type": "String"
+    },
+    "NonceSalt": {
+      "Description" : "Paste in Salt Value for NONCE_SALT",
+      "Type": "String"
     }
   },
 
@@ -107,7 +139,7 @@
   "Resources" : {
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
-        "DeletionPolicy" : "Snapshot",
+        "DeletionPolicy" : "Delete",
         "Properties" : {
           "AllocatedStorage" : "20",
           "AllowMajorVersionUpgrade" : true,
@@ -159,7 +191,7 @@
         "Metadata" : {
   				"AWS::CloudFormation::Init" : {
   					"configSets" : {
-  						"wordpress" : ["configure_cfn", "install_wordpress", "config_wordpress"]
+  						"wordpress" : ["configure_cfn", "install_wordpress", "configure_wordpress"]
   					},
   					"configure_cfn" : {
   						"files" : {
@@ -213,6 +245,36 @@
   						"sources" : {
   							"/var/www/html" : "http://wordpress.org/latest.tar.gz"
   						},
+              "files" : {
+                "/var/www/html/wordpress/wp-config.php" : {
+                    "content" : { "Fn::Join" : ["", [
+                      "<?php\n",
+                      "define('DB_NAME',          '", {"Ref" : "DatabaseName"}, "');\n",
+                      "define('DB_USER',          '", {"Ref" : "DatabaseUser"}, "');\n",
+                      "define('DB_PASSWORD',      '", {"Ref" : "DatabasePassword" }, "');\n",
+                      "define('DB_HOST',          '", {"Fn::GetAtt" : ["DB", "Endpoint.Address"]},"');\n",
+                      "define('DB_CHARSET',       'utf8');\n",
+                      "define('DB_COLLATE',       '');\n",
+                      "define('AUTH_KEY',      '", {"Ref" : "AuthKey" }, "');\n",
+                      "define('SECURE_AUTH_KEY',      '", {"Ref" : "SecureAuthKey" }, "');\n",
+                      "define('LOGGED_IN_KEY',      '", {"Ref" : "LoggedInKey" }, "');\n",
+                      "define('NONCE_KEY',      '", {"Ref" : "NonceKey" }, "');\n",
+                      "define('AUTH_SALT',      '", {"Ref" : "AuthSalt" }, "');\n",
+                      "define('SECURE_AUTH_SALT',      '", {"Ref" : "SecureAuthSalt" }, "');\n",
+                      "define('LOGGED_IN_SALT',      '", {"Ref" : "LoggedInSalt" }, "');\n",
+                      "define('NONCE_SALT',      '", {"Ref" : "NonceSalt" }, "');\n",
+                      "define('WP_DEBUG'          , false);\n",
+                      "define('FS_METHOD',        'direct');\n",
+                      "$table_prefix  = 'wp_';\n",
+                      "if ( !defined('ABSPATH') )\n",
+                      "    define('ABSPATH', dirname(__FILE__) . '/');\n",
+                      "require_once(ABSPATH . 'wp-settings.php');\n"
+                    ]]},
+                    "mode" : "000644",
+                    "owner" : "root",
+                    "group" : "root"
+                        }
+                      },
   						"services" : {
   							"sysvinit" : {
   								"httpd" : {
@@ -221,54 +283,13 @@
   								}
   							}
   						}
-  					},
-  					"config_wordpress" : {
-  						"commands" : {
-  							"01_clone_config" : {
-  								"cwd" : "/var/www/html/wordpress",
-  								"test" : "test ! -e /var/www/html/wordpress/wp-config.php",
-  								"command" : "cp wp-config-sample.php wp-config.php"
-  							},
-  							"02_inject_dbhost" : {
-  								"cwd" : "/var/www/html/wordpress",
-  								"command" : {"Fn::Join" : ["", [
-  									"sed -i 's/localhost/",
-  									{"Fn::GetAtt" : ["DB", "Endpoint.Address"]},
-  									"/g' wp-config.php"
-  								]]}
-  							},
-  							"03_inject_dbname" : {
-  								"cwd" : "/var/www/html/wordpress",
-  								"command" : {"Fn::Join" : ["", [
-  									"sed -i 's/database_name_here/",
-  									{"Ref" : "DatabaseName"},
-  									"/g' wp-config.php"
-  								]]}
-  							},
-  							"04_inject_dbuser" : {
-  								"cwd" : "/var/www/html/wordpress",
-  								"command" : {"Fn::Join" : ["", [
-  									"sed -i 's/username_here/",
-  									{"Ref" : "DatabaseUser"},
-  									"/g' wp-config.php"
-  								]]}
-  							},
-  							"05_inject_dbpassword" : {
-  								"cwd" : "/var/www/html/wordpress",
-  								"command" : {"Fn::Join" : ["", [
-  									"sed -i 's/password_here/",
-  									{"Ref" : "DatabasePassword"},
-  									"/g' wp-config.php"
-  								]]}
-  							}
-  						}
   					}
   				}
   			}
     },
     "S3" : {
         "Type" : "AWS::S3::Bucket",
-        "DeletionPolicy" : "Retain",
+        "DeletionPolicy" : "Delete",
         "Properties" : {
           "LoggingConfiguration" : {
             "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
