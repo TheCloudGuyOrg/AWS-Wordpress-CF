@@ -3,3 +3,4 @@ param-production.json
 param-development.json
 AWS_commands.txt
 WordpressExample2.json
+.gitignore
