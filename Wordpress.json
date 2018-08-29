@@ -277,16 +277,7 @@
                       },
               "commands" : {
                 "01_Set_WebServer_Ownership" : {
-                    "command" : "chown -R apache:apache wordpress",
-                    "cwd" : "/var/www/html/wordpress"
-                  },
-                "02_set_WP_Directory_Permissions" : {
-                    "command" : "chown -R apache:apache wordpress",
-                    "cwd" : "/var/www/html/wordpress"
-                  },
-                "03_set_WP_File_Permissions" : {
-                    "command" : "chown -R apache:apache wordpress",
-                    "cwd" : "/var/www/html/wordpress"
+                    "command" : "sudo chown -R apache:apache /var/www/html/wordpress"
                   }
                 },
   						"services" : {
