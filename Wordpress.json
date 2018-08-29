@@ -108,16 +108,16 @@
   "Mappings" : {
     "RegionMap": {
 			"us-east-1": {
-				"AMALINUX": "ami-c481fad3"
+				"AMALINUX": "ami-0ff8a91507f77f867"
 			},
 			"us-east-2": {
-				"AMALINUX": "ami-71ca9114"
+				"AMALINUX": "ami-0b59bfac6be064b78"
 			},
 			"us-west-1": {
-				"AMALINUX": "ami-de347abe"
+				"AMALINUX": "ami-0bdb828fd58c52235"
 			},
 			"us-west-2": {
-				"AMALINUX": "ami-b04e92d0"
+				"AMALINUX": "ami-a0cfeed8"
 			}
 		},
 		"InstanceSize": {
@@ -139,7 +139,7 @@
   "Resources" : {
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
-        "DeletionPolicy" : "Delete",
+        "DeletionPolicy" : "Snapshot",
         "Properties" : {
           "AllocatedStorage" : "20",
           "AllowMajorVersionUpgrade" : true,
@@ -294,7 +294,7 @@
     },
     "S3" : {
         "Type" : "AWS::S3::Bucket",
-        "DeletionPolicy" : "Delete",
+        "DeletionPolicy" : "Retain",
         "Properties" : {
           "LoggingConfiguration" : {
             "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
