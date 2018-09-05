@@ -134,7 +134,7 @@
   "Resources" : {
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
-        "DeletionPolicy" : "Snapshot",
+        "DeletionPolicy" : "Delete",
         "Properties" : {
           "AllocatedStorage" : "20",
           "AllowMajorVersionUpgrade" : true,
@@ -152,9 +152,44 @@
           "StorageType" : "gp2"
         }
     },
-    "EC2" : {
-      "Type" : "AWS::EC2::Instance",
-      "DeletionPolicy" : "Delete",
+    "ElasticLoadBalancer" : {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties": {
+        "AvailabilityZones" : { "Fn::GetAZs" : "" },
+        "CrossZone" : "true",
+        "Listeners" : [{
+          "InstancePort" : "80",
+          "InstanceProtocol" : "HTTP",
+          "LoadBalancerPort" : "80",
+          "Protocol" : "HTTP"
+        }]
+      }
+    },
+    "AutoScalingGroup" : {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "AvailabilityZones" : { "Fn::GetAZs" : "" },
+        "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
+        "MinSize" : "2",
+        "MaxSize" : "3",
+        "LoadBalancerNames" : [ { "Ref" : "ElasticLoadBalancer" }]
+      },
+      "CreationPolicy" : {
+        "ResourceSignal" : {
+          "Timeout" : "PT15M"
+        }
+      },
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "1",
+          "PauseTime" : "PT15M",
+          "WaitOnResourceSignals": "true"
+        }
+      }
+    },
+    "LaunchConfig" : {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
           "ImageId" : {"Fn::FindInMap" : ["RegionMap", {"Ref" : "AWS::Region"}, "AMALINUX"]},
           "InstanceType" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "EC2"]},
@@ -173,17 +208,11 @@
 
               "/opt/aws/bin/cfn-signal -e $?",
               " --stack ", {"Ref" : "AWS::StackName"},
-              " --resource EC2",
+              " --resource AutoScalingGroup",
               " --region ", {"Ref" : "AWS::Region"}, "\n"
   				]]}}
         },
-      "CreationPolicy" : {
-        "ResourceSignal" : {
-          "Count" : "1",
-          "Timeout" : "PT15M"
-          }
-        },
-        "Metadata" : {
+      "Metadata" : {
   				"AWS::CloudFormation::Init" : {
   					"configSets" : {
   						"wordpress" : ["configure_cfn", "install_wordpress"]
@@ -289,7 +318,7 @@
     },
     "S3" : {
         "Type" : "AWS::S3::Bucket",
-        "DeletionPolicy" : "Retain",
+        "DeletionPolicy" : "Delete",
         "Properties" : {
           "LoggingConfiguration" : {
             "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
@@ -305,11 +334,11 @@
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
-      "Value" : {"Fn::Join" : ["",["http://", {"Fn::GetAtt" : ["EC2", "PublicIp"]}, "/wordpress"]]}
+      "Value" : {"Fn::Join" : ["",["http://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress"]]}
     },
     "wpadmin" : {
       "Description" : "Admin Login URL - if restoring from snap, ALWAYS use this URL first",
-      "Value" : {"Fn::Join" : ["",["http://", {"Fn::GetAtt" : ["EC2", "PublicIp"]}, "/wordpress/wp-login.php"]]}
+      "Value" : {"Fn::Join" : ["",["http://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress/wp-login.php"]]}
     }
   }
 }
