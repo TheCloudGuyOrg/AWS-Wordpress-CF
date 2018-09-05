@@ -9,6 +9,16 @@
       "Default" : "",
       "Description" : "snap id to restore"
     },
+    "VpcId" : {
+      "Type" : "AWS::EC2::VPC::Id",
+      "Description" : "VpcId of your existing Virtual Private Cloud (VPC)",
+      "ConstraintDescription" : "must be the VPC Id of an existing Virtual Private Cloud."
+    },
+    "Subnets" : {
+      "Type" : "List<AWS::EC2::Subnet::Id>",
+      "Description" : "The list of SubnetIds in your Virtual Private Cloud (VPC)",
+      "ConstraintDescription" : "must be a list of at least two existing subnets associated with at least two different availability zones. They should be residing in the selected Virtual Private Cloud."
+    },
     "EnvironmentSize": {
       "Description" : "Size of Wordpress Site",
       "Type" : "String",
@@ -152,27 +162,53 @@
           "StorageType" : "gp2"
         }
     },
+    "ELBTargetGroup" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties" : {
+        "Name" : {"Ref" : "DatabaseName"},
+        "HealthCheckPath" : "/wordpress/wp-admin/install.php",
+        "HealthCheckIntervalSeconds" : 10,
+        "HealthCheckTimeoutSeconds" : 5,
+        "HealthyThresholdCount" : 2,
+        "Port" : 80,
+        "Protocol" : "HTTP",
+        "UnhealthyThresholdCount" : 5,
+        "VpcId" : {"Ref" : "VpcId"},
+        "TargetGroupAttributes" :
+          [ { "Key" : "stickiness.enabled", "Value" : "true" },
+            { "Key" : "stickiness.type", "Value" : "lb_cookie" },
+            { "Key" : "stickiness.lb_cookie.duration_seconds", "Value" : "30" }
+        ]
+      }
+    },
     "ElasticLoadBalancer" : {
-      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-      "Properties": {
-        "AvailabilityZones" : { "Fn::GetAZs" : "" },
-        "CrossZone" : "true",
-        "Listeners" : [{
-          "InstancePort" : "80",
-          "InstanceProtocol" : "HTTP",
-          "LoadBalancerPort" : "80",
-          "Protocol" : "HTTP"
-        }]
+      "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties" : {
+        "Name" : {"Ref" : "DatabaseName"},
+        "Subnets" : { "Ref" : "Subnets"}
+      }
+    },
+    "ELBListener" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "DefaultActions" : [{
+          "Type" : "forward",
+          "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }
+        }],
+        "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
+        "Port" : "80",
+        "Protocol" : "HTTP"
       }
     },
     "AutoScalingGroup" : {
       "Type" : "AWS::AutoScaling::AutoScalingGroup",
       "Properties" : {
-        "AvailabilityZones" : { "Fn::GetAZs" : "" },
+        "VPCZoneIdentifier" : { "Ref" : "Subnets" },
         "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
         "MinSize" : "2",
         "MaxSize" : "3",
-        "LoadBalancerNames" : [ { "Ref" : "ElasticLoadBalancer" }]
+        "DesiredCapacity" : "2",
+        "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ]
       },
       "CreationPolicy" : {
         "ResourceSignal" : {
@@ -200,7 +236,7 @@
 
   						"/opt/aws/bin/cfn-init -v",
   						" --stack ", {"Ref" : "AWS::StackName"},
-  						" --resource EC2",
+  						" --resource LaunchConfig",
   						" --configsets wordpress",
   						" --region ", {"Ref" : "AWS::Region"}, "\n",
 
@@ -226,7 +262,7 @@
   									"path=Resources.EC2.Metadata.AWS::CloudFormation::Init\n",
   									"action=/opt/aws/bin/cfn-init -v",
   									" --stack ", {"Ref" : "AWS::StackName"},
-  									" --resource EC2",
+  									" --resource LaunchConfig",
   									" --configsets wordpress",
   									" --region ", {"Ref" : "AWS::Region"}, "\n"
   								]]},
