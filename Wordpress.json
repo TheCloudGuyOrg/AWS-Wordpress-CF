@@ -21,11 +21,6 @@
       "Type" : "AWS::EC2::KeyPair::KeyName",
       "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
     },
-    "KMSKey": {
-      "Description" : "Amazon KMS Encryption Key",
-      "Type" : "String",
-      "ConstraintDescription" : "must be the name of an existing KMS Key."
-    },
     "DestinationBucketName": {
       "Description" : "Destination of the S3 Bucket Logs",
       "Type" : "String",
@@ -302,14 +297,6 @@
           },
           "VersioningConfiguration" : {
             "Status" : "Enabled"
-          },
-          "BucketEncryption" : {
-            "ServerSideEncryptionConfiguration" : [{
-              "ServerSideEncryptionByDefault" : {
-                "KMSMasterKeyID" : {"Ref" : "KMSKey"},
-                "SSEAlgorithm" : "aws:kms"
-                }
-              }]
             }
           }
         }
