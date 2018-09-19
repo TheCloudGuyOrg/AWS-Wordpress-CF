@@ -154,7 +154,7 @@
   "Resources" : {
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
-        "DeletionPolicy" : "Delete",
+        "DeletionPolicy" : "Snapshot",
         "Properties" : {
           "AllocatedStorage" : "20",
           "AllowMajorVersionUpgrade" : true,
@@ -365,7 +365,7 @@
     },
     "S3" : {
         "Type" : "AWS::S3::Bucket",
-        "DeletionPolicy" : "Delete",
+        "DeletionPolicy" : "Retain",
         "Properties" : {
           "LoggingConfiguration" : {
             "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
