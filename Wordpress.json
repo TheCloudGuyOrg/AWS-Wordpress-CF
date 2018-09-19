@@ -199,6 +199,14 @@
         "Subnets" : { "Ref" : "Subnets"}
       }
     },
+    "ELBCertificate" : {
+      "Type" : "AWS::CertificateManager::Certificate",
+      "Properties" : {
+        "DomainName" : "www.thecloudguy.org",
+        "SubjectAlternativeNames" : [ "www.thecloudguyllc.com", "www.thecloudguy.biz" ],
+        "ValidationMethod" : "DNS"
+      }
+    },
     "ELBListener" : {
       "Type" : "AWS::ElasticLoadBalancingV2::Listener",
       "Properties" : {
@@ -207,8 +215,11 @@
           "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }
         }],
         "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
-        "Port" : "80",
-        "Protocol" : "HTTP"
+        "Certificates" : [{
+          "CertificateArn" : { "Ref" : "ELBCertificate" }
+        }],
+        "Port" : "443",
+        "Protocol" : "HTTPS"
       }
     },
     "AutoScalingGroup" : {
