@@ -188,6 +188,7 @@
     },
     "WordpressLBSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
+      "GroupName" : "WordpressLBSecurityGroup",
       "Properties" : {
         "GroupDescription" : "Enable HTTPS access via port 443",
         "SecurityGroupIngress" : [{
@@ -256,6 +257,7 @@
     },
     "WordpressSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
+      "GroupName" : "WordpressSecurityGroup",
       "Properties" : {
         "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer + SSH access",
         "SecurityGroupIngress" : [{
