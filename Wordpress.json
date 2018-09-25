@@ -9,11 +9,6 @@
       "Default" : "",
       "Description" : "Security Group for SSH Access"
     },
-    "WebSecurityGroup" : {
-      "Type" : "AWS::EC2::SecurityGroup::Id",
-      "Default" : "",
-      "Description" : "Security Group for HTTP and HTTPS Access"
-    },
     "SnapToRestore" : {
       "Type" : "String",
       "Default" : "",
@@ -154,7 +149,7 @@
   "Resources" : {
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
-        "DeletionPolicy" : "Snapshot",
+        "DeletionPolicy" : "Delete",
         "Properties" : {
           "AllocatedStorage" : "20",
           "AllowMajorVersionUpgrade" : true,
@@ -191,11 +186,24 @@
         ]
       }
     },
+    "WordpressLBSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTPS access via port 443",
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "443",
+          "ToPort" : "443",
+          "CidrIp" : "0.0.0.0/0"
+          }],
+        "VpcId" : { "Ref" : "VpcId" }
+        }
+      },
     "ElasticLoadBalancer" : {
       "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
       "Properties" : {
         "Name" : {"Ref" : "DatabaseName"},
-        "SecurityGroups" : [{"Ref" : "WebSecurityGroup"}],
+        "SecurityGroups" : [{"Ref" : "WordpressLBSecurityGroup"}],
         "Subnets" : { "Ref" : "Subnets"}
       }
     },
@@ -246,13 +254,25 @@
         }
       }
     },
+    "WordpressSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer + SSH access",
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "80", "ToPort" : "80",
+          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"
+            ]}]}}],
+        "VpcId" : { "Ref" : "VpcId" }
+      }
+    },
     "LaunchConfig" : {
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
           "ImageId" : {"Fn::FindInMap" : ["RegionMap", {"Ref" : "AWS::Region"}, "AMALINUX"]},
           "InstanceType" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "EC2"]},
           "KeyName" : {"Ref" : "KeyPair"},
-          "SecurityGroups" : [ {"Ref" : "SSHSecurityGroup"}, {"Ref" : "WebSecurityGroup"}],
+          "SecurityGroups" : [ {"Ref" : "SSHSecurityGroup"}, {"Ref" : "WordpressSecurityGroup"}],
           "UserData" : {"Fn::Base64" : {"Fn::Join" : ["", [
   						"#!/bin/bash", "\n",
               "yum update -y aws-cfn-bootstrap", "\n",
@@ -377,7 +397,7 @@
     },
     "S3" : {
         "Type" : "AWS::S3::Bucket",
-        "DeletionPolicy" : "Retain",
+        "DeletionPolicy" : "Delete",
         "Properties" : {
           "LoggingConfiguration" : {
             "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
