@@ -389,7 +389,6 @@
           }
         }
       },
-
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
