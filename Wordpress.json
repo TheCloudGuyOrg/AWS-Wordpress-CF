@@ -393,11 +393,11 @@
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
-      "Value" : {"Fn::Join" : ["",["http://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress"]]}
+      "Value" : {"Fn::Join" : ["",["https://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress"]]}
     },
     "wpadmin" : {
       "Description" : "Admin Login URL - if restoring from snap, ALWAYS use this URL first",
-      "Value" : {"Fn::Join" : ["",["http://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress/wp-login.php"]]}
+      "Value" : {"Fn::Join" : ["",["https://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress/wp-login.php"]]}
     }
   }
 }
