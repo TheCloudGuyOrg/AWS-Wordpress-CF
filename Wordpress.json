@@ -112,8 +112,9 @@
   },
 
   "Conditions" : {
-		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]}
-	},
+		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}
+    ]}
+  },
 
   "Mappings" : {
     "RegionMap": {
@@ -129,7 +130,7 @@
 			"us-west-2": {
 				"AMALINUX": "ami-a0cfeed8"
 			}
-		},
+    },
 		"InstanceSize": {
 			"Small": {
 				"EC2": "t2.micro",
@@ -147,6 +148,43 @@
   },
 
   "Resources" : {
+    "WordPressS3IAMPolicy" : {
+      "Type" : "AWS::IAM::Policy",
+      "Properties" : {
+        "PolicyName" : "WordPressS3IAMPolicy",
+        "Users" : [{ "Ref" : "WordPressS3IAMUser" }],
+        "PolicyDocument" : {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Action": [
+              "s3:ListAllMyBuckets",
+              "s3:HeadBucket"
+              ],
+            "Resource": "*"
+            },
+            {
+            "Effect": "Allow",
+            "Action": [ "s3:*" ],
+            "Resource": [
+              {"Fn::GetAtt" : ["S3", "Arn"]},
+              {"Fn::Join" : ["",[{"Fn::GetAtt" : ["S3", "Arn"]}, "/*"]]}]
+          }]
+        }
+      }
+    },
+    "WordPressS3IAMUser" : {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "UserName": "WordPressS3IAMUser"
+      }
+    },
+    "WordpressS3IAMKey" : {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties": {
+        "UserName": {"Ref" : "WordPressS3IAMUser"}
+      }
+    },
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
         "DeletionPolicy" : "Delete",
@@ -440,6 +478,18 @@
     "wpadmin" : {
       "Description" : "Admin Login URL - if restoring from snap, ALWAYS use this URL first",
       "Value" : {"Fn::Join" : ["",["https://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress/wp-login.php"]]}
+    },
+    "S3Bucket" : {
+      "Description" : "Wordpress S3 Bucket",
+      "Value" : {"Ref" : "S3"}
+    },
+    "S3AccessKey" : {
+      "Description" : "Access Key for S3 Wordpress User",
+      "Value" : {"Ref" : "WordpressS3IAMKey"}
+    },
+    "S3SecretKey" : {
+      "Description" : "Keypair for S3 Wordpress User",
+      "Value" : {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}
     }
   }
 }
