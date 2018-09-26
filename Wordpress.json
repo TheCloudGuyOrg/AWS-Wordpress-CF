@@ -235,6 +235,7 @@
         "Protocol" : "HTTP"
       }
     },
+    "HTTPSELBListener" : {
       "Type" : "AWS::ElasticLoadBalancingV2::Listener",
       "Properties" : {
         "DefaultActions" : [{
@@ -245,7 +246,8 @@
           "CertificateArn" : { "Ref" : "ELBCertificate" }}],
         "Port" : "443",
         "Protocol" : "HTTPS"
-      },
+      }
+    },
     "AutoScalingGroup" : {
       "Type" : "AWS::AutoScaling::AutoScalingGroup",
       "Properties" : {
