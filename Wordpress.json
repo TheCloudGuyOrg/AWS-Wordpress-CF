@@ -188,7 +188,6 @@
     },
     "WordpressLBSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
-
       "Properties" : {
         "GroupDescription" : "Enable HTTPS access via port 443",
         "GroupName" : "WordpressLBSecurityGroup",
@@ -200,8 +199,12 @@
           "IpProtocol" : "tcp",
           "FromPort" : "443",
           "ToPort" : "443",
-          "CidrIp" : "0.0.0.0/0"
-          }],
+          "CidrIp" : "0.0.0.0/0"},
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : "80",
+          "ToPort" : "80",
+          "CidrIp" : "0.0.0.0/0"}],
         "VpcId" : { "Ref" : "VpcId" }
         }
       },
@@ -221,21 +224,28 @@
         "ValidationMethod" : "DNS"
       }
     },
-    "ELBListener" : {
+    "HTTPELBListener" : {
       "Type" : "AWS::ElasticLoadBalancingV2::Listener",
       "Properties" : {
         "DefaultActions" : [{
           "Type" : "forward",
-          "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }
-        }],
+          "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }}],
         "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
-        "Certificates" : [{
-          "CertificateArn" : { "Ref" : "ELBCertificate" }
-        }],
-        "Port" : "443",
-        "Protocol" : "HTTPS"
+        "Port" : "80",
+        "Protocol" : "HTTP"
       }
     },
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "DefaultActions" : [{
+          "Type" : "forward",
+          "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }}],
+        "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
+        "Certificates" : [{
+          "CertificateArn" : { "Ref" : "ELBCertificate" }}],
+        "Port" : "443",
+        "Protocol" : "HTTPS"
+      },
     "AutoScalingGroup" : {
       "Type" : "AWS::AutoScaling::AutoScalingGroup",
       "Properties" : {
@@ -268,7 +278,7 @@
           "Key" : "Name",
           "Value" : "WordpressSecurityGroup"
           }],
-        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer + SSH access",
+        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer",
         "SecurityGroupIngress" : [{
           "IpProtocol" : "tcp",
           "FromPort" : "80", "ToPort" : "80",
