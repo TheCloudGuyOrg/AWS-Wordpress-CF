@@ -4,6 +4,11 @@
   "Description" : "AWS Cloud Formation Template to startup a Wordpress Site",
 
   "Parameters" : {
+    "DNSURL" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "Route53 Hosted Zone"
+    },
     "SSHSecurityGroup" :  {
       "Type" : "AWS::EC2::SecurityGroup::Id",
       "Default" : "",
@@ -79,41 +84,48 @@
     },
     "AuthKey": {
       "Description" : "Paste in Salt Value for AUTH_KEY",
-      "Type": "String"
+      "Type": "String",
+      "NoEcho" : "true"
     },
     "SecureAuthKey": {
       "Description" : "Paste in Salt Value for SECURE_AUTH_KEY",
+      "NoEcho" : "true",
       "Type": "String"
     },
     "LoggedInKey": {
       "Description" : "Paste in Salt Value for LOGGED_IN_KEY",
+      "NoEcho" : "true",
       "Type": "String"
     },
     "NonceKey": {
       "Description" : "Paste in Salt Value for NONCE_KEY",
+      "NoEcho" : "true",
       "Type": "String"
     },
     "AuthSalt": {
       "Description" : "Paste in Salt Value for AUTH_SALT",
+      "NoEcho" : "true",
       "Type": "String"
     },
     "SecureAuthSalt": {
       "Description" : "Paste in Salt Value for SECURE_AUTH_SALT",
+      "NoEcho" : "true",
       "Type": "String"
     },
     "LoggedInSalt": {
       "Description" : "Paste in Salt Value for LOGGED_IN_SALT",
+      "NoEcho" : "true",
       "Type": "String"
     },
     "NonceSalt": {
       "Description" : "Paste in Salt Value for NONCE_SALT",
+      "NoEcho" : "true",
       "Type": "String"
     }
   },
 
   "Conditions" : {
-		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}
-    ]}
+		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]}
   },
 
   "Mappings" : {
@@ -183,6 +195,17 @@
       "Type": "AWS::IAM::AccessKey",
       "Properties": {
         "UserName": {"Ref" : "WordPressS3IAMUser"}
+      }
+    },
+    "DNSAddress" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "AliasTarget" : {
+            "DNSName" : {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]},
+            "HostedZoneId" : {"Fn::GetAtt" : ["ElasticLoadBalancer", "CanonicalHostedZoneID"]}},
+        "HostedZoneName" : {"Fn::Join" : ["",[{"Ref" : "DNSURL"}, "."]]},
+        "Name" : {"Fn::Join" : ["",["www.", {"Ref" : "DNSURL"}, "."]]},
+        "Type" : "A"
       }
     },
     "DB" : {
@@ -473,11 +496,11 @@
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
-      "Value" : {"Fn::Join" : ["",["https://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress"]]}
+      "Value" : {"Fn::Join" : ["",["https://", {"Ref" : "DNSURL"}, "/wordpress"]]}
     },
     "wpadmin" : {
       "Description" : "Admin Login URL - if restoring from snap, ALWAYS use this URL first",
-      "Value" : {"Fn::Join" : ["",["https://", {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]}, "/wordpress/wp-login.php"]]}
+      "Value" : {"Fn::Join" : ["",["https://", {"Ref" : "DNSURL"}, "/wordpress/wp-login.php"]]}
     },
     "S3Bucket" : {
       "Description" : "Wordpress S3 Bucket",
