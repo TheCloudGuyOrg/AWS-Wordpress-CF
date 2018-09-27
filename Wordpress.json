@@ -412,7 +412,7 @@
   							"/var/www/html" : "http://wordpress.org/latest.tar.gz"
   						},
               "files" : {
-                "/var/www/html/wordpress/wp-config.php" : {
+                "/var/www/html/wp-config.php" : {
                     "content" : { "Fn::Join" : ["", [
                       "<?php\n",
                       "define('DB_NAME',          '", {"Ref" : "DatabaseName"}, "');\n",
@@ -442,8 +442,14 @@
                         }
                       },
               "commands" : {
-                "01_Set_WebServer_Ownership" : {
-                    "command" : "sudo chown -R apache:apache /var/www/html/wordpress"
+                "01_Copy_WP_Files_to_Root" : {
+                    "command" : "sudo mv /var/www/html/wordpress/* /var/www/html"
+                  },
+                "02_Copy_WP_Files_to_Root" : {
+                    "command" : "sudo rm -R /var/www/html/wordpress"
+                  },
+                "03_Set_WebServer_Ownership" : {
+                    "command" : "sudo chown -R apache:apache /var/www/html"
                   }
                 },
   						"services" : {
@@ -475,11 +481,11 @@
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
-      "Value" : {"Fn::Join" : ["",["http://www.", {"Ref" : "DNSURL"}, "/wordpress"]]}
+      "Value" : {"Fn::Join" : ["",["http://www.", {"Ref" : "DNSURL"}]]}
     },
     "wpadmin" : {
       "Description" : "Admin Login URL - if restoring from snap, ALWAYS use this URL first",
-      "Value" : {"Fn::Join" : ["",["http://www.", {"Ref" : "DNSURL"}, "/wordpress/wp-login.php"]]}
+      "Value" : {"Fn::Join" : ["",["http://www.", {"Ref" : "DNSURL"}, "/wp-login.php"]]}
     },
     "S3Bucket" : {
       "Description" : "Wordpress S3 Bucket",
