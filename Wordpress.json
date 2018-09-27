@@ -277,14 +277,6 @@
         "Subnets" : { "Ref" : "Subnets"}
       }
     },
-    "ELBCertificate" : {
-      "Type" : "AWS::CertificateManager::Certificate",
-      "Properties" : {
-        "DomainName" : "www.thecloudguy.org",
-        "SubjectAlternativeNames" : [ "www.thecloudguyllc.com", "www.thecloudguy.biz" ],
-        "ValidationMethod" : "DNS"
-      }
-    },
     "HTTPELBListener" : {
       "Type" : "AWS::ElasticLoadBalancingV2::Listener",
       "Properties" : {
@@ -294,19 +286,6 @@
         "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
         "Port" : "80",
         "Protocol" : "HTTP"
-      }
-    },
-    "HTTPSELBListener" : {
-      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
-      "Properties" : {
-        "DefaultActions" : [{
-          "Type" : "forward",
-          "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }}],
-        "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
-        "Certificates" : [{
-          "CertificateArn" : { "Ref" : "ELBCertificate" }}],
-        "Port" : "443",
-        "Protocol" : "HTTPS"
       }
     },
     "AutoScalingGroup" : {
@@ -496,11 +475,11 @@
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
-      "Value" : {"Fn::Join" : ["",["https://", {"Ref" : "DNSURL"}, "/wordpress"]]}
+      "Value" : {"Fn::Join" : ["",["http://www.", {"Ref" : "DNSURL"}, "/wordpress"]]}
     },
     "wpadmin" : {
       "Description" : "Admin Login URL - if restoring from snap, ALWAYS use this URL first",
-      "Value" : {"Fn::Join" : ["",["https://", {"Ref" : "DNSURL"}, "/wordpress/wp-login.php"]]}
+      "Value" : {"Fn::Join" : ["",["http://www.", {"Ref" : "DNSURL"}, "/wordpress/wp-login.php"]]}
     },
     "S3Bucket" : {
       "Description" : "Wordpress S3 Bucket",
