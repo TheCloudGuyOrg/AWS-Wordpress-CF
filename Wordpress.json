@@ -296,7 +296,8 @@
         "MinSize" : "2",
         "MaxSize" : "3",
         "DesiredCapacity" : "2",
-        "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ]
+        "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ],
+        "MetricsCollection" : [{"Granularity" : "1Minute"}]
       },
       "CreationPolicy" : {
         "ResourceSignal" : {
@@ -310,6 +311,52 @@
           "PauseTime" : "PT15M",
           "WaitOnResourceSignals": "true"
         }
+      }
+    },
+    "IncreaseAutoScalingPolicy" : {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : {"Ref" : "AutoScalingGroup"},
+        "PolicyType" : "SimpleScaling",
+        "ScalingAdjustment" : 1
+      }
+    },
+    "DecreaseAutoScalingPolicy" : {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : {"Ref" : "AutoScalingGroup"},
+        "PolicyType" : "SimpleScaling",
+        "ScalingAdjustment" : -1
+      }
+    },
+    "IncreaseAutoScalingAlarm" : {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+         "AlarmDescription": "Scale-up if CPU is greater than 90% for 10 minutes",
+         "MetricName": "CPUUtilization",
+         "Namespace": "AWS/EC2",
+         "Statistic": "Average",
+         "Period": "300",
+         "EvaluationPeriods": "1",
+         "Threshold": "75",
+         "ComparisonOperator": "GreaterThanThreshold",
+         "AlarmActions": [ { "Ref": "IncreaseAutoScalingPolicy" } ]
+      }
+    },
+    "DecreaseAutoScalingAlarm" : {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+         "AlarmDescription": "Scale-down if CPU is less than 70% for 10 minutes",
+         "MetricName": "CPUUtilization",
+         "Namespace": "AWS/EC2",
+         "Statistic": "Average",
+         "Period": "300",
+         "EvaluationPeriods": "1",
+         "Threshold": "50",
+         "ComparisonOperator": "LessThanThreshold",
+         "AlarmActions": [ { "Ref": "DecreaseAutoScalingPolicy" } ]
       }
     },
     "WordpressSecurityGroup" : {
