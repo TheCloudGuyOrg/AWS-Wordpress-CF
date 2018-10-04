@@ -536,7 +536,7 @@
     },
     "S3Bucket" : {
       "Description" : "Wordpress S3 Bucket",
-      "Value" : {"Ref" : "S3Bucket" }
+      "Value" : { "Fn::Select" : [ "5", { "Fn::Split": [":", {"Ref" : "S3Bucket" }]}] } 
     },
     "S3AccessKey" : {
       "Description" : "Access Key for S3 Wordpress User",
