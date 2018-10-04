@@ -14,6 +14,11 @@
       "Default" : "",
       "Description" : "Security Group for SSH Access"
     },
+    "S3Bucket" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "S3 Bucket ARN for Wordpress Files"
+    },
     "SnapToRestore" : {
       "Type" : "String",
       "Default" : "",
@@ -40,16 +45,6 @@
       "Description" : "Amazon EC2 Key Pair",
       "Type" : "AWS::EC2::KeyPair::KeyName",
       "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
-    },
-    "DestinationBucketName": {
-      "Description" : "Destination of the S3 Bucket Logs",
-      "Type" : "String",
-      "ConstraintDescription" : "must be the name of an existing S3 Bucket."
-    },
-    "LogFilePrefix": {
-      "Description" : "Prefix for the S3 Bucket Logs",
-      "Type" : "String",
-      "ConstraintDescription" : "Name of log file prefix"
     },
     "DatabaseName" : {
       "Description" : "The WordPress database name",
@@ -179,8 +174,8 @@
             "Effect": "Allow",
             "Action": [ "s3:*" ],
             "Resource": [
-              {"Fn::GetAtt" : ["S3", "Arn"]},
-              {"Fn::Join" : ["",[{"Fn::GetAtt" : ["S3", "Arn"]}, "/*"]]}]
+              {"Ref" : "S3Bucket" },
+              {"Fn::Join" : ["",[{"Ref" : "S3Bucket" }, "/*"]]}]
           }]
         }
       }
@@ -510,21 +505,8 @@
   					}
   				}
   			}
+      }
     },
-    "S3" : {
-        "Type" : "AWS::S3::Bucket",
-        "DeletionPolicy" : "Delete",
-        "Properties" : {
-          "LoggingConfiguration" : {
-            "DestinationBucketName" : {"Ref" : "DestinationBucketName"},
-            "LogFilePrefix" : {"Ref" : "LogFilePrefix"}
-          },
-          "VersioningConfiguration" : {
-            "Status" : "Enabled"
-            }
-          }
-        }
-      },
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
@@ -536,7 +518,7 @@
     },
     "S3Bucket" : {
       "Description" : "Wordpress S3 Bucket",
-      "Value" : {"Ref" : "S3"}
+      "Value" : {"Ref" : "S3Bucket" }
     },
     "S3AccessKey" : {
       "Description" : "Access Key for S3 Wordpress User",
