@@ -19,6 +19,11 @@
       "Default" : "",
       "Description" : "S3 Bucket ARN for Wordpress Files"
     },
+    "Certificate" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "Certificate ARN for HTTPS"
+    },
     "SnapToRestore" : {
       "Type" : "String",
       "Default" : "",
@@ -283,6 +288,19 @@
         "Protocol" : "HTTP"
       }
     },
+    "HTTPSELBListener" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "DefaultActions" : [{
+          "Type" : "forward",
+          "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }}],
+        "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
+        "Certificates" : [{
+          "CertificateArn" : { "Ref" : "Certificate" }}],
+        "Port" : "443",
+        "Protocol" : "HTTPS"
+      }
+    },
     "AutoScalingGroup" : {
       "Type" : "AWS::AutoScaling::AutoScalingGroup",
       "Properties" : {
@@ -510,11 +528,11 @@
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
-      "Value" : {"Fn::Join" : ["",["http://www.", {"Ref" : "DNSURL"}]]}
+      "Value" : {"Fn::Join" : ["",["https://www.", {"Ref" : "DNSURL"}]]}
     },
     "wpadmin" : {
-      "Description" : "Admin Login URL - if restoring from snap, ALWAYS use this URL first",
-      "Value" : {"Fn::Join" : ["",["http://www.", {"Ref" : "DNSURL"}, "/wp-login.php"]]}
+      "Description" : "Admin Login URL",
+      "Value" : {"Fn::Join" : ["",["https://www.", {"Ref" : "DNSURL"}, "/wp-login.php"]]}
     },
     "S3Bucket" : {
       "Description" : "Wordpress S3 Bucket",
