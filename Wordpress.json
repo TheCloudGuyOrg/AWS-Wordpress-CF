@@ -7,12 +7,12 @@
     "DNSURL" : {
       "Type" : "String",
       "Default" : "",
-      "Description" : "Enter Route53 Hosted Zone. Leave blank if not using Route53"
+      "Description" : "Enter Route53 Hosted Zone."
     },
     "Certificate" : {
       "Type" : "String",
       "Default" : "",
-      "Description" : "Certificate ARN for HTTPS. Leave blank if not using HTTPS"
+      "Description" : "Certificate ARN for HTTPS."
     },
     "S3Bucket" : {
       "Type" : "String",
@@ -185,8 +185,6 @@
 
   "Conditions" : {
 		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]},
-    "noRoute53" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "DNSURL"}, ""]}]},
-    "noHTTPS" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "Certificate"}, ""]}]}
   },
 
   "Mappings" : {
