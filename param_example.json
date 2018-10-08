@@ -1,70 +1,86 @@
 [
   {
+    "ParameterKey" : "DNSURL",
+    "ParameterValue" : "Route53 Hosted Zone Name"
+  },
+  {
+    "ParameterKey" : "Certificate",
+    "ParameterValue" : "Arn for AWS Certificate"
+  },
+  {
+    "ParameterKey" : "S3Bucket",
+    "ParameterValue" : "Arn of S3 Bucket"
+  },
+  {
     "ParameterKey" : "EnvironmentSize",
-    "ParameterValue" : "ENVSIZE-REPLACE"
+    "ParameterValue" : "Small|Medium|Large"
+  },
+  {
+    "ParameterKey" : "VpcId",
+    "ParameterValue" : "ID of VPC to install site"
+  },
+  {
+    "ParameterKey" : "Subnets",
+    "ParameterValue" : "List of Subnets to deploy site to"
+  },
+  {
+    "ParameterKey" : "SSHSecurityGroup",
+    "ParameterValue" : "Security Group to Enable SSH for LaunchConfig"
   },
   {
     "ParameterKey" : "KeyPair",
-    "ParameterValue" : "KEYPAIR-REPLACE"
-  },
-  {
-    "ParameterKey" : "KMSKey",
-    "ParameterValue" : "KMSKEY-REPLACE"
-  },
-  {
-    "ParameterKey" : "DestinationBucketName",
-    "ParameterValue" : "LOGBUCKET-REPLACE"
-  },
-  {
-    "ParameterKey" : "LogFilePrefix",
-    "ParameterValue" : "LOGPREFIX-REPLACE"
+    "ParameterValue" : "Keypair for LaunchConfig"
   },
   {
     "ParameterKey" : "DatabaseName",
-    "ParameterValue" : "DBNAME-REPLACE"
+    "ParameterValue" : "Database Name"
   },
   {
     "ParameterKey" : "DatabaseUser",
-    "ParameterValue" : "DBUSER-REPLACE"
+    "ParameterValue" : "Database User"
   },
   {
     "ParameterKey" : "DatabasePassword",
-    "ParameterValue" : "DBPASSWORD-REPLACE"
+    "ParameterValue" : "Database Password"
   },
   {
     "ParameterKey" : "MultiAZDatabase",
-    "ParameterValue" : "false"
+    "ParameterValue" : "true|false"
+  },
+  {
+    "ParameterKey" : "SnapToRestore",
+    "ParameterValue" : ""
   },
   {
     "ParameterKey" : "AuthKey",
-    "ParameterValue" : "xpg.o>jfs08;W4f0k.M~p6#[D<H1bMccc-!iiyrMoAFL}^LCL8Q8N~=JaR6N[a@T"
+    "ParameterValue" : "Paste from Wordpress Salt Generator"
   },
   {
     "ParameterKey" : "SecureAuthKey",
-    "ParameterValue" : "/-^7|l+l0-a_;#uIi_AU?0VyrBZP* + !BQz:Y,Xx=+nwU-p[^Zt7-a0+A*Bq{f2"
+    "ParameterValue" : "Paste from Wordpress Salt Generator"
   },
   {
     "ParameterKey" : "LoggedInKey",
-    "ParameterValue" : ")nOiLujiU9Chf{vD/6JKF2-LS/WkY|AMjD_eihCj9x_+TR?CG)!C(wwa*/:+)Z7Z"
+    "ParameterValue" : "Paste from Wordpress Salt Generator"
   },
   {
     "ParameterKey" : "NonceKey",
-    "ParameterValue" : "y7aLR~.th4tf1: ![w{:+>/C*EaVgL(kb(gY2jem&lb~1?&V|H#xwlM;MG*S#k05"
+    "ParameterValue" : "Paste from Wordpress Salt Generator"
   },
   {
     "ParameterKey" : "AuthSalt",
-    "ParameterValue" : ")B^Tdq|Nb<.$d!T!b<!St0EC,s#}-R$}i&*ycN0bKH!V[y-]pzuY)`T@4tEh>iuU"
+    "ParameterValue" : "Paste from Wordpress Salt Generator"
   },
   {
     "ParameterKey" : "SecureAuthSalt",
-    "ParameterValue" : "[hsxmoy1Si Hbbart[/1wqL^+%v,$~A+L&Z9h8kds3rwS89Iu35Ho9iT-l-j/.k)"
+    "ParameterValue" : "Paste from Wordpress Salt Generator"
   },
   {
     "ParameterKey" : "LoggedInSalt",
-    "ParameterValue" : ",P]hFsY>4iD(Fiq-|$b>^rm7])OSC)<Bn:=Y]VM%CnQH0X8p*Ku(S:e&_|!tJp0`"
+    "ParameterValue" : "Paste from Wordpress Salt Generator"
   },
   {
     "ParameterKey" : "NonceSalt",
-    "ParameterValue" : "pp+0|lr1,j, Qpohh37+snLuj:N|S6l--G`d$X+g2;*4]/w!s,p<S]}[MK?NYcN4"
+    "ParameterValue" : "Paste from Wordpress Salt Generator"
   }
   ]
