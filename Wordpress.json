@@ -258,10 +258,22 @@
   },
 
   "Resources" : {
+    "WordPressS3IAMUser" : {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "UserName": {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "S3IAMUser"]]}
+      }
+    },
+    "WordpressS3IAMKey" : {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties": {
+        "UserName": {"Ref" : "WordPressS3IAMUser"}
+      }
+    },
     "WordPressS3IAMPolicy" : {
       "Type" : "AWS::IAM::Policy",
       "Properties" : {
-        "PolicyName" : "WordPressS3IAMPolicy",
+        "PolicyName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "S3IAMPolicy"]]},
         "Users" : [{ "Ref" : "WordPressS3IAMUser" }],
         "PolicyDocument" : {
           "Version": "2012-10-17",
@@ -281,18 +293,6 @@
               {"Fn::Join" : ["",[{"Ref" : "S3Bucket" }, "/*"]]}]
           }]
         }
-      }
-    },
-    "WordPressS3IAMUser" : {
-      "Type": "AWS::IAM::User",
-      "Properties": {
-        "UserName": "WordPressS3IAMUser"
-      }
-    },
-    "WordpressS3IAMKey" : {
-      "Type": "AWS::IAM::AccessKey",
-      "Properties": {
-        "UserName": {"Ref" : "WordPressS3IAMUser"}
       }
     },
     "DNSAddress" : {
@@ -349,10 +349,10 @@
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
         "GroupDescription" : "Enable HTTPS access via port 443",
-        "GroupName" : "WordpressLBSecurityGroup",
+        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "LBSecurityGroup"]]},
         "Tags" : [{
           "Key" : "Name",
-          "Value" : "WordpressLBSecurityGroup"
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "LBSecurityGroup"]]}
           }],
         "SecurityGroupIngress" : [{
           "IpProtocol" : "tcp",
@@ -473,11 +473,10 @@
     "WordpressSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
-        "GroupName" : "WordpressSecurityGroup",
+        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]},
         "Tags" : [{
           "Key" : "Name",
-          "Value" : "WordpressSecurityGroup"
-          }],
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]}}],
         "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer",
         "SecurityGroupIngress" : [{
           "IpProtocol" : "tcp",
