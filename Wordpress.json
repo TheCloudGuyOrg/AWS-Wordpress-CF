@@ -157,28 +157,27 @@
         {
         "Label" : { "default":"WordPress Salt Values" },
         "Parameters" : [ "AuthKey", "SecureAuthKey", "LoggedInKey", "NonceKey", "AuthSalt", "SecureAuthSalt", "LoggedInSalt", "NonceSalt" ]
-        }
-      ],
-    "ParameterLabels" : {
-      "DNSURL" : { "default" : "Route53 Hosted Zone" },
-      "Certificate" : { "default" : "HTTPS Certificate" },
-      "S3Bucket" : { "default" : "S3 Bucket for WP Files" },
-      "EnvironmentSize" : { "default" : "Size of WP Environment" },
-      "VpcId" : { "default" : "Deploy to VPC" },
-      "SSHSecurityGroup" : { "default" : "SSH Security Group" },
-      "DatabaseName" : { "default" : "Database Name" },
-      "DatabaseUser" : { "default" : "Database User" },
-      "DatabasePassword" : { "default" : "Database Password" },
-      "MultiAZDatabase" : { "default" : "Multi-AZ Database" },
-      "SnapToRestore" : { "default" : "Restore DB Snapshot" },
-      "AuthKey" : { "default" : "AUTH_KEY" },
-      "SecureAuthKey" : { "default" : "SECURE_AUTH_KEY" },
-      "LoggedInKey" : { "default" : "LOGGED_IN_KEY" },
-      "NonceKey" : { "default" : "NONCE_KEY" },
-      "AuthSalt" : { "default" : "AUTH_SALT" },
-      "SecureAuthSalt" : { "default" : "SECURE_AUTH_SALT" },
-      "LoggedInSalt" : { "default" : "LOGGED_IN_SALT" },
-      "NonceSalt" : { "default" : "NONCE_SALT" }
+        }],
+      "ParameterLabels" : {
+        "DNSURL" : { "default" : "Route53 Hosted Zone" },
+        "Certificate" : { "default" : "HTTPS Certificate" },
+        "S3Bucket" : { "default" : "S3 Bucket for WP Files" },
+        "EnvironmentSize" : { "default" : "Size of WP Environment" },
+        "VpcId" : { "default" : "Deploy to VPC" },
+        "SSHSecurityGroup" : { "default" : "SSH Security Group" },
+        "DatabaseName" : { "default" : "Database Name" },
+        "DatabaseUser" : { "default" : "Database User" },
+        "DatabasePassword" : { "default" : "Database Password" },
+        "MultiAZDatabase" : { "default" : "Multi-AZ Database" },
+        "SnapToRestore" : { "default" : "Restore DB Snapshot" },
+        "AuthKey" : { "default" : "AUTH_KEY" },
+        "SecureAuthKey" : { "default" : "SECURE_AUTH_KEY" },
+        "LoggedInKey" : { "default" : "LOGGED_IN_KEY" },
+        "NonceKey" : { "default" : "NONCE_KEY" },
+        "AuthSalt" : { "default" : "AUTH_SALT" },
+        "SecureAuthSalt" : { "default" : "SECURE_AUTH_SALT" },
+        "LoggedInSalt" : { "default" : "LOGGED_IN_SALT" },
+        "NonceSalt" : { "default" : "NONCE_SALT" }
       }
     }
   },
