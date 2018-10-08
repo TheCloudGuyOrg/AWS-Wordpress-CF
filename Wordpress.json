@@ -179,15 +179,21 @@
 		"InstanceSize": {
 			"Small": {
 				"EC2": "t2.micro",
-				"DB": "db.t2.micro"
+				"DB": "db.t2.micro",
+        "ASMin": 2,
+        "ASMax": 3
 			},
 			"Medium": {
 				"EC2": "t2.small",
-				"DB": "db.t2.small"
+				"DB": "db.t2.small",
+        "ASMin": 2,
+        "ASMax": 5
 			},
 			"Large": {
 				"EC2": "t2.medium",
-				"DB": "db.t2.medium"
+				"DB": "db.t2.medium",
+        "ASMin": 3,
+        "ASMax": 10
 			}
 		}
   },
@@ -339,9 +345,9 @@
       "Properties" : {
         "VPCZoneIdentifier" : { "Ref" : "Subnets" },
         "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
-        "MinSize" : "2",
-        "MaxSize" : "3",
-        "DesiredCapacity" : "2",
+        "MinSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMin"]},
+        "MaxSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMax"]},
+        "DesiredCapacity" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMin"]},
         "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ],
         "MetricsCollection" : [{"Granularity" : "1Minute"}]
       },
