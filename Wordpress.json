@@ -124,6 +124,31 @@
     }
   },
 
+  "Metadata" : {
+    "AWS::CloudFormation::Interface" : {
+      "ParameterGroups" : [{
+        "Label" : { "default":"Precreated Resources" },
+        "Parameters" : [ "DNSURL", "Certificate", "S3Bucket" ]
+        },
+        {
+        "Label" : { "default":"Environment Configuration" },
+        "Parameters" : [ "EnvironmentSize", "VpcId", "Subnets", "SSHSecurityGroup", "KeyPair", "SnapToRestore" ]
+        },
+        {
+        "Label" : { "default" : "DataBase Configuration" },
+        "Parameters" : [ "DatabaseName", "DatabaseUser", "DatabasePassword", "MultiAZDatabase" ]
+        },
+        {
+        "Label" : { "default":"WordPress Salt Values" },
+        "Parameters" : [ "AuthKey", "SecureAuthKey", "LoggedInKey", "NonceKey", "AuthSalt", "SecureAuthSalt", "LoggedInSalt", "NonceSalt" ]
+        }
+      ],
+    "ParameterLabels" : {
+      "VPCID" : { "default" : "Which VPC should this be deployed to?" }
+      }
+    }
+  },
+
   "Conditions" : {
 		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]}
   },
@@ -564,6 +589,7 @@
   			}
       }
     },
+
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
