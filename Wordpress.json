@@ -7,27 +7,24 @@
     "DNSURL" : {
       "Type" : "String",
       "Default" : "",
-      "Description" : "Route53 Hosted Zone"
-    },
-    "SSHSecurityGroup" :  {
-      "Type" : "AWS::EC2::SecurityGroup::Id",
-      "Default" : "",
-      "Description" : "Security Group for SSH Access"
-    },
-    "S3Bucket" : {
-      "Type" : "String",
-      "Default" : "",
-      "Description" : "S3 Bucket ARN for Wordpress Files"
+      "Description" : "Enter Route53 Hosted Zone. Leave blank if not using Route53"
     },
     "Certificate" : {
       "Type" : "String",
       "Default" : "",
-      "Description" : "Certificate ARN for HTTPS"
+      "Description" : "Certificate ARN for HTTPS. Leave blank if not using HTTPS"
     },
-    "SnapToRestore" : {
+    "S3Bucket" : {
       "Type" : "String",
       "Default" : "",
-      "Description" : "snap id to restore"
+      "Description" : "S3 Bucket ARN for Wordpress Files."
+    },
+    "EnvironmentSize": {
+      "Description" : "Select the size of Wordpress enviroment to create",
+      "Type" : "String",
+      "Default" : "Small",
+      "AllowedValues" : ["Small", "Medium", "Large"],
+      "ConstraintDescription" : "Size of Environment"
     },
     "VpcId" : {
       "Type" : "AWS::EC2::VPC::Id",
@@ -39,13 +36,11 @@
       "Description" : "The list of SubnetIds in your Virtual Private Cloud (VPC)",
       "ConstraintDescription" : "must be a list of at least two existing subnets associated with at least two different availability zones. They should be residing in the selected Virtual Private Cloud."
     },
-    "EnvironmentSize": {
-      "Description" : "Size of Wordpress Site",
-      "Type" : "String",
-      "Default" : "Small",
-      "AllowedValues" : ["Small", "Medium", "Large"],
-      "ConstraintDescription" : "Size of Environment"
-		},
+    "SSHSecurityGroup" :  {
+      "Type" : "AWS::EC2::SecurityGroup::Id",
+      "Default" : "",
+      "Description" : "Security Group for SSH Access. SSH Port 22"
+    },
     "KeyPair": {
       "Description" : "Amazon EC2 Key Pair",
       "Type" : "AWS::EC2::KeyPair::KeyName",
@@ -78,49 +73,70 @@
     },
     "MultiAZDatabase": {
       "Default": "false",
-      "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance",
+      "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance. Must be true or false",
       "Type": "String",
       "ConstraintDescription" : "must be either true or false."
+    },
+    "SnapToRestore" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "Optional Snap to Restore. Leave blank if new enviroment"
     },
     "AuthKey": {
       "Description" : "Paste in Salt Value for AUTH_KEY",
       "Type": "String",
-      "NoEcho" : "true"
+      "NoEcho" : "true",
+      "MinLength" : "64",
+      "MaxLength" : "64"
     },
     "SecureAuthKey": {
       "Description" : "Paste in Salt Value for SECURE_AUTH_KEY",
       "NoEcho" : "true",
-      "Type": "String"
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
     },
     "LoggedInKey": {
       "Description" : "Paste in Salt Value for LOGGED_IN_KEY",
       "NoEcho" : "true",
-      "Type": "String"
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
     },
     "NonceKey": {
       "Description" : "Paste in Salt Value for NONCE_KEY",
       "NoEcho" : "true",
-      "Type": "String"
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
     },
     "AuthSalt": {
       "Description" : "Paste in Salt Value for AUTH_SALT",
       "NoEcho" : "true",
-      "Type": "String"
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
     },
     "SecureAuthSalt": {
       "Description" : "Paste in Salt Value for SECURE_AUTH_SALT",
       "NoEcho" : "true",
-      "Type": "String"
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
     },
     "LoggedInSalt": {
       "Description" : "Paste in Salt Value for LOGGED_IN_SALT",
       "NoEcho" : "true",
-      "Type": "String"
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
     },
     "NonceSalt": {
       "Description" : "Paste in Salt Value for NONCE_SALT",
       "NoEcho" : "true",
-      "Type": "String"
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
     }
   },
 
@@ -132,11 +148,11 @@
         },
         {
         "Label" : { "default":"Environment Configuration" },
-        "Parameters" : [ "EnvironmentSize", "VpcId", "Subnets", "SSHSecurityGroup", "KeyPair", "SnapToRestore" ]
+        "Parameters" : [ "EnvironmentSize", "VpcId", "Subnets", "SSHSecurityGroup", "KeyPair" ]
         },
         {
         "Label" : { "default" : "DataBase Configuration" },
-        "Parameters" : [ "DatabaseName", "DatabaseUser", "DatabasePassword", "MultiAZDatabase" ]
+        "Parameters" : [ "DatabaseName", "DatabaseUser", "DatabasePassword", "MultiAZDatabase", "SnapToRestore" ]
         },
         {
         "Label" : { "default":"WordPress Salt Values" },
@@ -144,13 +160,33 @@
         }
       ],
     "ParameterLabels" : {
-      "VPCID" : { "default" : "Which VPC should this be deployed to?" }
+      "DNSURL" : { "default" : "Route53 Hosted Zone" },
+      "Certificate" : { "default" : "HTTPS Certificate" },
+      "S3Bucket" : { "default" : "S3 Bucket for WP Files" },
+      "EnvironmentSize" : { "default" : "Size of WP Environment" },
+      "VpcId" : { "default" : "Deploy to VPC" },
+      "SSHSecurityGroup" : { "default" : "SSH Security Group" },
+      "DatabaseName" : { "default" : "Database Name" },
+      "DatabaseUser" : { "default" : "Database User" },
+      "DatabasePassword" : { "default" : "Database Password" },
+      "MultiAZDatabase" : { "default" : "Multi-AZ Database" },
+      "SnapToRestore" : { "default" : "Restore DB Snapshot" },
+      "AuthKey" : { "default" : "AUTH_KEY" },
+      "SecureAuthKey" : { "default" : "SECURE_AUTH_KEY" },
+      "LoggedInKey" : { "default" : "LOGGED_IN_KEY" },
+      "NonceKey" : { "default" : "NONCE_KEY" },
+      "AuthSalt" : { "default" : "AUTH_SALT" },
+      "SecureAuthSalt" : { "default" : "SECURE_AUTH_SALT" },
+      "LoggedInSalt" : { "default" : "LOGGED_IN_SALT" },
+      "NonceSalt" : { "default" : "NONCE_SALT" }
       }
     }
   },
 
   "Conditions" : {
-		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]}
+		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]},
+    "noRoute53" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "DNSURL"}, ""]}]},
+    "noHTTPS" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "Certificate"}, ""]}]}
   },
 
   "Mappings" : {
