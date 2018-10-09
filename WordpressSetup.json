@@ -512,7 +512,7 @@
       "Metadata" : {
   				"AWS::CloudFormation::Init" : {
   					"configSets" : {
-  						"wordpress" : ["configure_cfn", "install_wordpress"]
+  						"wordpress" : ["configure_cfn", "setup_s3fs", "install_wordpress"]
   					},
   					"configure_cfn" : {
   						"files" : {
@@ -554,6 +554,50 @@
   							}
   						}
   					},
+            "setup_s3fs" : {
+              "files" : {
+                "/etc/passwd-s3fs" : {
+                  "content" : {"Fn::Join" : ["", [
+                    {"Ref" : "WordpressS3IAMKey"},":", {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}]]},
+                  "mode" : "000640",
+                  "owner" : "root",
+                  "group" : "root"
+                }
+              },
+              "packages" : {
+                "yum" : {
+                  "automake" : [],
+                   "fuse" : [],
+                   "fuse-devel" : [],
+                   "gcc-c++" : [],
+                   "git" : [],
+                   "libcurl-devel" : [],
+                   "libxml2-devel" : [],
+                   "make" : [],
+                   "openssl-devel" : []
+                }
+              },
+              "commands" : {
+                "01_Clone_s3fs_git" : {
+                  "command" : "git clone https://github.com/s3fs-fuse/s3fs-fuse.git"
+                  },
+                "02_CD_s3fs-fuse" : {
+                  "command" : "cd s3fs-fuse"
+                  },
+                "03_Run_autogen.sh" : {
+                  "command" : "./autogen.sh"
+                  },
+                "04_configure" : {
+                  "command" : "./configure --prefix=/usr --with-openssl"
+                  },
+                "05_make" : {
+                  "command" : "make"
+                  },
+                "06_Run_make" : {
+                  "command" : "sudo make install"
+                  }
+                }
+              },
   					"install_wordpress" : {
   						"packages" : {
   							"yum" : {
@@ -563,7 +607,7 @@
   								"php-mysql" : [],
                   "php-gd" : []
   							}
-  						},
+              },
   						"sources" : {
   							"/var/www/html" : "http://wordpress.org/latest.tar.gz"
   						},
