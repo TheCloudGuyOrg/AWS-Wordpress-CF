@@ -1,0 +1,651 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "AWS Cloud Formation Template to startup a Wordpress Site",
+
+  "Parameters" : {
+    "DNSURL" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "Enter Route53 Hosted Zone."
+    },
+    "Certificate" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "Certificate ARN for HTTPS."
+    },
+    "S3Bucket" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "S3 Bucket ARN for Wordpress Files."
+    },
+    "EnvironmentSize": {
+      "Description" : "Select the size of Wordpress enviroment to create",
+      "Type" : "String",
+      "Default" : "Small",
+      "AllowedValues" : ["Small", "Medium", "Large"],
+      "ConstraintDescription" : "Size of Environment"
+    },
+    "VpcId" : {
+      "Type" : "AWS::EC2::VPC::Id",
+      "Description" : "VpcId of your existing Virtual Private Cloud (VPC)",
+      "ConstraintDescription" : "must be the VPC Id of an existing Virtual Private Cloud."
+    },
+    "Subnets" : {
+      "Type" : "List<AWS::EC2::Subnet::Id>",
+      "Description" : "The list of SubnetIds in your Virtual Private Cloud (VPC)",
+      "ConstraintDescription" : "must be a list of at least two existing subnets associated with at least two different availability zones. They should be residing in the selected Virtual Private Cloud."
+    },
+    "SSHSecurityGroup" :  {
+      "Type" : "AWS::EC2::SecurityGroup::Id",
+      "Default" : "",
+      "Description" : "Security Group for SSH Access. SSH Port 22"
+    },
+    "KeyPair": {
+      "Description" : "Amazon EC2 Key Pair",
+      "Type" : "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
+    },
+    "DatabaseName" : {
+      "Description" : "The WordPress database name",
+      "Type" : "String",
+      "MinLength" : "1",
+      "MaxLength" : "64",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+    },
+    "DatabaseUser" : {
+      "Description" : "The WordPress database admin account username",
+      "Type" : "String",
+      "MinLength" : "1",
+      "MaxLength" : "16",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+    },
+    "DatabasePassword" : {
+      "Description" : "The WordPress database admin account password",
+      "Type" : "String",
+      "MinLength" : "8",
+			"MaxLength" : "41",
+			"NoEcho" : "true",
+			"AllowedPattern" : "[a-zA-Z0-9]*",
+      "ConstraintDescription" : "must contain only alphanumeric characters."
+    },
+    "MultiAZDatabase": {
+      "Default": "false",
+      "Description" : "Create a Multi-AZ MySQL Amazon RDS database instance. Must be true or false",
+      "Type": "String",
+      "ConstraintDescription" : "must be either true or false."
+    },
+    "SnapToRestore" : {
+      "Type" : "String",
+      "Default" : "",
+      "Description" : "Optional Snap to Restore. Leave blank if new enviroment"
+    },
+    "AuthKey": {
+      "Description" : "Paste in Salt Value for AUTH_KEY",
+      "Type": "String",
+      "NoEcho" : "true",
+      "MinLength" : "64",
+      "MaxLength" : "64"
+    },
+    "SecureAuthKey": {
+      "Description" : "Paste in Salt Value for SECURE_AUTH_KEY",
+      "NoEcho" : "true",
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
+    },
+    "LoggedInKey": {
+      "Description" : "Paste in Salt Value for LOGGED_IN_KEY",
+      "NoEcho" : "true",
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
+    },
+    "NonceKey": {
+      "Description" : "Paste in Salt Value for NONCE_KEY",
+      "NoEcho" : "true",
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
+    },
+    "AuthSalt": {
+      "Description" : "Paste in Salt Value for AUTH_SALT",
+      "NoEcho" : "true",
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
+    },
+    "SecureAuthSalt": {
+      "Description" : "Paste in Salt Value for SECURE_AUTH_SALT",
+      "NoEcho" : "true",
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
+    },
+    "LoggedInSalt": {
+      "Description" : "Paste in Salt Value for LOGGED_IN_SALT",
+      "NoEcho" : "true",
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
+    },
+    "NonceSalt": {
+      "Description" : "Paste in Salt Value for NONCE_SALT",
+      "NoEcho" : "true",
+      "Type": "String",
+      "MinLength" : "64",
+      "MaxLength" : "64"
+    }
+  },
+
+  "Metadata" : {
+    "AWS::CloudFormation::Interface" : {
+      "ParameterGroups" : [{
+        "Label" : { "default":"Precreated Resources" },
+        "Parameters" : [ "DNSURL", "Certificate", "S3Bucket" ]
+        },
+        {
+        "Label" : { "default":"Environment Configuration" },
+        "Parameters" : [ "EnvironmentSize", "VpcId", "Subnets", "SSHSecurityGroup", "KeyPair" ]
+        },
+        {
+        "Label" : { "default" : "DataBase Configuration" },
+        "Parameters" : [ "DatabaseName", "DatabaseUser", "DatabasePassword", "MultiAZDatabase", "SnapToRestore" ]
+        },
+        {
+        "Label" : { "default":"WordPress Salt Values" },
+        "Parameters" : [ "AuthKey", "SecureAuthKey", "LoggedInKey", "NonceKey", "AuthSalt", "SecureAuthSalt", "LoggedInSalt", "NonceSalt" ]
+        }],
+      "ParameterLabels" : {
+        "DNSURL" : { "default" : "Route53 Hosted Zone" },
+        "Certificate" : { "default" : "HTTPS Certificate" },
+        "S3Bucket" : { "default" : "S3 Bucket for WP Files" },
+        "EnvironmentSize" : { "default" : "Size of WP Environment" },
+        "VpcId" : { "default" : "Deploy to VPC" },
+        "SSHSecurityGroup" : { "default" : "SSH Security Group" },
+        "DatabaseName" : { "default" : "Database Name" },
+        "DatabaseUser" : { "default" : "Database User" },
+        "DatabasePassword" : { "default" : "Database Password" },
+        "MultiAZDatabase" : { "default" : "Multi-AZ Database" },
+        "SnapToRestore" : { "default" : "Restore DB Snapshot" },
+        "AuthKey" : { "default" : "AUTH_KEY" },
+        "SecureAuthKey" : { "default" : "SECURE_AUTH_KEY" },
+        "LoggedInKey" : { "default" : "LOGGED_IN_KEY" },
+        "NonceKey" : { "default" : "NONCE_KEY" },
+        "AuthSalt" : { "default" : "AUTH_SALT" },
+        "SecureAuthSalt" : { "default" : "SECURE_AUTH_SALT" },
+        "LoggedInSalt" : { "default" : "LOGGED_IN_SALT" },
+        "NonceSalt" : { "default" : "NONCE_SALT" }
+      }
+    }
+  },
+
+  "Conditions" : {
+		"isRestore" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "SnapToRestore"}, ""]}]}
+  },
+
+  "Mappings" : {
+    "RegionMap": {
+			"us-east-1": {
+				"AMALINUX": "ami-0ff8a91507f77f867"
+			},
+			"us-east-2": {
+				"AMALINUX": "ami-0b59bfac6be064b78"
+			},
+			"us-west-1": {
+				"AMALINUX": "ami-0bdb828fd58c52235"
+			},
+			"us-west-2": {
+				"AMALINUX": "ami-a0cfeed8"
+			},
+      "ap-northeast-1": {
+        "AMALINUX": "ami-06cd52961ce9f0d85"
+      },
+      "ap-northeast-2": {
+        "AMALINUX": "ami-0a10b2721688ce9d2"
+      },
+      "ap-southeast-1": {
+				"AMALINUX": "ami-08569b978cc4dfa10"
+			},
+      "ap-southeast-2": {
+        "AMALINUX": "ami-09b42976632b27e9b"
+      },
+      "ap-south-1": {
+        "AMALINUX": "ami-0912f71e06545ad88"
+      },
+      "ca-central-1": {
+        "AMALINUX": "ami-0b18956f"
+      },
+      "eu-central-1": {
+        "AMALINUX": "ami-0233214e13e500f77"
+      },
+      "eu-west-1": {
+        "AMALINUX": "ami-047bb4163c506cd98"
+      },
+      "eu-west-2": {
+        "AMALINUX": "ami-f976839e"
+      },
+      "eu-west-3": {
+        "AMALINUX": "ami-0ebc281c20e89ba4b"
+      },
+      "sa-east-1": {
+        "AMALINUX": "ami-07b14488da8ea02a0"
+      }
+    },
+		"InstanceSize": {
+			"Small": {
+				"EC2": "t2.micro",
+				"DB": "db.t2.micro",
+        "ASMin": 2,
+        "ASMax": 3
+			},
+			"Medium": {
+				"EC2": "t2.small",
+				"DB": "db.t2.small",
+        "ASMin": 2,
+        "ASMax": 5
+			},
+			"Large": {
+				"EC2": "t2.medium",
+				"DB": "db.t2.medium",
+        "ASMin": 3,
+        "ASMax": 10
+			}
+		}
+  },
+
+  "Resources" : {
+    "WordPressS3IAMUser" : {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "UserName": {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "S3IAMUser"]]}
+      }
+    },
+    "WordpressS3IAMKey" : {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties": {
+        "UserName": {"Ref" : "WordPressS3IAMUser"}
+      }
+    },
+    "WordPressS3IAMPolicy" : {
+      "Type" : "AWS::IAM::Policy",
+      "Properties" : {
+        "PolicyName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "S3IAMPolicy"]]},
+        "Users" : [{ "Ref" : "WordPressS3IAMUser" }],
+        "PolicyDocument" : {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Action": [
+              "s3:ListAllMyBuckets",
+              "s3:HeadBucket"
+              ],
+            "Resource": "*"
+            },
+            {
+            "Effect": "Allow",
+            "Action": [ "s3:*" ],
+            "Resource": [
+              {"Ref" : "S3Bucket" },
+              {"Fn::Join" : ["",[{"Ref" : "S3Bucket" }, "/*"]]}]
+          }]
+        }
+      }
+    },
+    "DNSAddress" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "AliasTarget" : {
+            "DNSName" : {"Fn::GetAtt" : ["ElasticLoadBalancer", "DNSName"]},
+            "HostedZoneId" : {"Fn::GetAtt" : ["ElasticLoadBalancer", "CanonicalHostedZoneID"]}},
+        "HostedZoneName" : {"Fn::Join" : ["",[{"Ref" : "DNSURL"}, "."]]},
+        "Name" : {"Fn::Join" : ["",["www.", {"Ref" : "DNSURL"}, "."]]},
+        "Type" : "A"
+      }
+    },
+    "DB" : {
+        "Type" : "AWS::RDS::DBInstance",
+        "DeletionPolicy" : "Snapshot",
+        "Properties" : {
+          "AllocatedStorage" : "20",
+          "AllowMajorVersionUpgrade" : true,
+          "AutoMinorVersionUpgrade" : true,
+          "CopyTagsToSnapshot" : true,
+          "DBInstanceClass" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "DB"]},
+          "DBInstanceIdentifier" : {"Ref" : "DatabaseName"},
+          "DBName": {"Fn::If" : ["isRestore", {"Ref" : "AWS::NoValue"}, {"Ref" : "DatabaseName"}]},
+          "Engine" : "MySQL",
+          "MultiAZ" : { "Ref": "MultiAZDatabase"},
+          "MasterUsername": {"Fn::If" : ["isRestore", {"Ref" : "AWS::NoValue"}, {"Ref" : "DatabaseUser"}]},
+          "MasterUserPassword": {"Fn::If" : ["isRestore", {"Ref" : "AWS::NoValue"}, {"Ref" : "DatabasePassword"}]},
+          "DBSnapshotIdentifier" : {"Fn::If" : ["isRestore", {"Ref" : "SnapToRestore"}, {"Ref" : "AWS::NoValue"}]},
+          "PubliclyAccessible" : false,
+          "StorageType" : "gp2"
+        }
+    },
+    "ELBTargetGroup" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties" : {
+        "Name" : {"Ref" : "DatabaseName"},
+        "HealthCheckPath" : "/wordpress/wp-admin/install.php",
+        "HealthCheckIntervalSeconds" : 10,
+        "HealthCheckTimeoutSeconds" : 5,
+        "HealthyThresholdCount" : 2,
+        "Port" : 80,
+        "Protocol" : "HTTP",
+        "UnhealthyThresholdCount" : 5,
+        "VpcId" : {"Ref" : "VpcId"},
+        "TargetGroupAttributes" :
+          [ { "Key" : "stickiness.enabled", "Value" : "true" },
+            { "Key" : "stickiness.type", "Value" : "lb_cookie" },
+            { "Key" : "stickiness.lb_cookie.duration_seconds", "Value" : "30" }
+        ]
+      }
+    },
+    "WordpressLBSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTPS access via port 443",
+        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "LBSecurityGroup"]]},
+        "Tags" : [{
+          "Key" : "Name",
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "LBSecurityGroup"]]}
+          }],
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "443",
+          "ToPort" : "443",
+          "CidrIp" : "0.0.0.0/0"},
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : "80",
+          "ToPort" : "80",
+          "CidrIp" : "0.0.0.0/0"}],
+        "VpcId" : { "Ref" : "VpcId" }
+        }
+      },
+    "ElasticLoadBalancer" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties" : {
+        "Name" : {"Ref" : "DatabaseName"},
+        "SecurityGroups" : [{"Ref" : "WordpressLBSecurityGroup"}],
+        "Subnets" : { "Ref" : "Subnets"}
+      }
+    },
+    "HTTPELBListener" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "DefaultActions" : [{
+          "Type" : "forward",
+          "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }}],
+        "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
+        "Port" : "80",
+        "Protocol" : "HTTP"
+      }
+    },
+    "HTTPSELBListener" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties" : {
+        "DefaultActions" : [{
+          "Type" : "forward",
+          "TargetGroupArn" : { "Ref" : "ELBTargetGroup" }}],
+        "LoadBalancerArn" : { "Ref" : "ElasticLoadBalancer" },
+        "Certificates" : [{
+          "CertificateArn" : { "Ref" : "Certificate" }}],
+        "Port" : "443",
+        "Protocol" : "HTTPS"
+      }
+    },
+    "AutoScalingGroup" : {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "VPCZoneIdentifier" : { "Ref" : "Subnets" },
+        "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
+        "MinSize" : 1,
+        "MaxSize" : 1,
+        "DesiredCapacity" : 1,
+        "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ],
+        "MetricsCollection" : [{"Granularity" : "1Minute"}]
+      },
+      "CreationPolicy" : {
+        "ResourceSignal" : {
+          "Timeout" : "PT15M"
+        }
+      },
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "1",
+          "PauseTime" : "PT15M",
+          "WaitOnResourceSignals": "true"
+        }
+      }
+    },
+    "IncreaseAutoScalingPolicy" : {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : {"Ref" : "AutoScalingGroup"},
+        "PolicyType" : "SimpleScaling",
+        "ScalingAdjustment" : 1
+      }
+    },
+    "DecreaseAutoScalingPolicy" : {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : {"Ref" : "AutoScalingGroup"},
+        "PolicyType" : "SimpleScaling",
+        "ScalingAdjustment" : -1
+      }
+    },
+    "IncreaseAutoScalingAlarm" : {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+         "AlarmDescription": "Scale-up if CPU is greater than 90% for 10 minutes",
+         "MetricName": "CPUUtilization",
+         "Namespace": "AWS/EC2",
+         "Statistic": "Average",
+         "Period": "300",
+         "EvaluationPeriods": "1",
+         "Threshold": "75",
+         "ComparisonOperator": "GreaterThanThreshold",
+         "AlarmActions": [ { "Ref": "IncreaseAutoScalingPolicy" } ]
+      }
+    },
+    "DecreaseAutoScalingAlarm" : {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+         "AlarmDescription": "Scale-down if CPU is less than 70% for 10 minutes",
+         "MetricName": "CPUUtilization",
+         "Namespace": "AWS/EC2",
+         "Statistic": "Average",
+         "Period": "300",
+         "EvaluationPeriods": "1",
+         "Threshold": "50",
+         "ComparisonOperator": "LessThanThreshold",
+         "AlarmActions": [ { "Ref": "DecreaseAutoScalingPolicy" } ]
+      }
+    },
+    "WordpressSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]},
+        "Tags" : [{
+          "Key" : "Name",
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]}}],
+        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer",
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "80", "ToPort" : "80",
+          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"
+            ]}]}}],
+        "VpcId" : { "Ref" : "VpcId" }
+      }
+    },
+    "LaunchConfig" : {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Properties" : {
+          "ImageId" : {"Fn::FindInMap" : ["RegionMap", {"Ref" : "AWS::Region"}, "AMALINUX"]},
+          "InstanceType" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "EC2"]},
+          "KeyName" : {"Ref" : "KeyPair"},
+          "SecurityGroups" : [ {"Ref" : "SSHSecurityGroup"}, {"Ref" : "WordpressSecurityGroup"}],
+          "UserData" : {"Fn::Base64" : {"Fn::Join" : ["", [
+  						"#!/bin/bash", "\n",
+              "yum update -y aws-cfn-bootstrap", "\n",
+
+  						"/opt/aws/bin/cfn-init -v",
+  						" --stack ", {"Ref" : "AWS::StackName"},
+  						" --resource LaunchConfig",
+  						" --configsets wordpress",
+  						" --region ", {"Ref" : "AWS::Region"}, "\n",
+
+              "yum update -y", "\n",
+
+              "/opt/aws/bin/cfn-signal -e $?",
+              " --stack ", {"Ref" : "AWS::StackName"},
+              " --resource AutoScalingGroup",
+              " --region ", {"Ref" : "AWS::Region"}, "\n"
+  				]]}}
+        },
+      "Metadata" : {
+  				"AWS::CloudFormation::Init" : {
+  					"configSets" : {
+  						"wordpress" : ["configure_cfn", "install_wordpress"]
+  					},
+  					"configure_cfn" : {
+  						"files" : {
+  							"/etc/cfn/hooks.d/cfn-auto-reloader.conf" : {
+  								"content" : {"Fn::Join" : ["", [
+  									"[cfn-auto-reloader-hook]\n",
+  									"triggers=post.update\n",
+  									"path=Resources.EC2.Metadata.AWS::CloudFormation::Init\n",
+  									"action=/opt/aws/bin/cfn-init -v",
+  									" --stack ", {"Ref" : "AWS::StackName"},
+  									" --resource LaunchConfig",
+  									" --configsets wordpress",
+  									" --region ", {"Ref" : "AWS::Region"}, "\n"
+  								]]},
+  								"mode" : "000400",
+  								"owner" : "root",
+  								"group" : "root"
+  							},
+  							"/etc/cfn/cfn-hup.conf" : {
+  								"content" : {"Fn::Join" : ["",[
+  									"[main]\n",
+  									"stack=", {"Ref" : "AWS::StackId"}, "\n",
+  									"region=", {"Ref" : "AWS::Region"}, "\n",
+  									"verbose=true\n",
+  									"interval=5\n"
+  								]]},
+  								"mode" : "000400",
+  								"owner" : "root",
+  								"group" : "root"
+  							}
+  						},
+  						"services" : {
+  							"sysvinit" : {
+  								"cfn-hup" : {
+  									"enabled" : "true",
+  									"ensureRunning" : "true",
+  									"files" : ["/etc/cfn/cfn-hup.conf", "/etc/cfn/hooks.d/cfn-auto-reloader.conf"]
+  								}
+  							}
+  						}
+  					},
+  					"install_wordpress" : {
+  						"packages" : {
+  							"yum" : {
+  								"httpd" : [],
+  								"php" : [],
+  								"mysql" : [],
+  								"php-mysql" : [],
+                  "php-gd" : []
+  							}
+  						},
+  						"sources" : {
+  							"/var/www/html" : "http://wordpress.org/latest.tar.gz"
+  						},
+              "files" : {
+                "/var/www/html/wp-config.php" : {
+                    "content" : { "Fn::Join" : ["", [
+                      "<?php\n",
+                      "define('FORCE_SSL_ADMIN', true);\n",
+                      "if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false)\n",
+                      "    $_SERVER['HTTPS']='on';\n",
+                      "define('DB_NAME',          '", {"Ref" : "DatabaseName"}, "');\n",
+                      "define('DB_USER',          '", {"Ref" : "DatabaseUser"}, "');\n",
+                      "define('DB_PASSWORD',      '", {"Ref" : "DatabasePassword" }, "');\n",
+                      "define('DB_HOST',          '", {"Fn::GetAtt" : ["DB", "Endpoint.Address"]},"');\n",
+                      "define('DB_CHARSET',       'utf8');\n",
+                      "define('DB_COLLATE',       '');\n",
+                      "define('AUTH_KEY',      '", {"Ref" : "AuthKey" }, "');\n",
+                      "define('SECURE_AUTH_KEY',      '", {"Ref" : "SecureAuthKey" }, "');\n",
+                      "define('LOGGED_IN_KEY',      '", {"Ref" : "LoggedInKey" }, "');\n",
+                      "define('NONCE_KEY',      '", {"Ref" : "NonceKey" }, "');\n",
+                      "define('AUTH_SALT',      '", {"Ref" : "AuthSalt" }, "');\n",
+                      "define('SECURE_AUTH_SALT',      '", {"Ref" : "SecureAuthSalt" }, "');\n",
+                      "define('LOGGED_IN_SALT',      '", {"Ref" : "LoggedInSalt" }, "');\n",
+                      "define('NONCE_SALT',      '", {"Ref" : "NonceSalt" }, "');\n",
+                      "define('WP_DEBUG'          , false);\n",
+                      "define('FS_METHOD',        'direct');\n",
+                      "$table_prefix  = 'wp_';\n",
+                      "if ( !defined('ABSPATH') )\n",
+                      "    define('ABSPATH', dirname(__FILE__) . '/');\n",
+                      "require_once(ABSPATH . 'wp-settings.php');\n"
+                    ]]},
+                    "mode" : "000644",
+                    "owner" : "root",
+                    "group" : "root"
+                        }
+                      },
+              "commands" : {
+                "01_Copy_WP_Files_to_Root" : {
+                    "command" : "sudo mv /var/www/html/wordpress/* /var/www/html"
+                  },
+                "02_Copy_WP_Files_to_Root" : {
+                    "command" : "sudo rm -R /var/www/html/wordpress"
+                  },
+                "03_Set_WebServer_Ownership" : {
+                    "command" : "sudo chown -R apache:apache /var/www/html"
+                  }
+                },
+  						"services" : {
+  							"sysvinit" : {
+  								"httpd" : {
+  									"enabled" : "true",
+  									"ensureRunning" : "true"
+  								}
+  							}
+  						}
+  					}
+  				}
+  			}
+      }
+    },
+
+  "Outputs" : {
+    "wproot" : {
+      "Description" : "Access URL for wordpress",
+      "Value" : {"Fn::Join" : ["",["https://www.", {"Ref" : "DNSURL"}]]}
+    },
+    "wpadmin" : {
+      "Description" : "Admin Login URL",
+      "Value" : {"Fn::Join" : ["",["https://www.", {"Ref" : "DNSURL"}, "/wp-login.php"]]}
+    },
+    "S3Bucket" : {
+      "Description" : "Wordpress S3 Bucket",
+      "Value" : { "Fn::Select" : [ "5", { "Fn::Split": [":", {"Ref" : "S3Bucket" }]}] }
+    },
+    "S3AccessKey" : {
+      "Description" : "Access Key for S3 Wordpress User",
+      "Value" : {"Ref" : "WordpressS3IAMKey"}
+    },
+    "S3SecretKey" : {
+      "Description" : "Keypair for S3 Wordpress User",
+      "Value" : {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}
+    }
+  }
+}
