@@ -14,11 +14,6 @@
       "Default" : "",
       "Description" : "Certificate ARN for HTTPS."
     },
-    "S3Bucket" : {
-      "Type" : "String",
-      "Default" : "",
-      "Description" : "S3 Bucket ARN for Wordpress Files."
-    },
     "EnvironmentSize": {
       "Description" : "Select the size of Wordpress enviroment to create",
       "Type" : "String",
@@ -257,6 +252,10 @@
   },
 
   "Resources" : {
+    "S3" : {
+      "Type" : "AWS::S3::Bucket",
+      "DeletionPolicy" : "Retain"
+    },
     "WordPressS3IAMUser" : {
       "Type": "AWS::IAM::User",
       "Properties": {
@@ -288,8 +287,8 @@
             "Effect": "Allow",
             "Action": [ "s3:*" ],
             "Resource": [
-              {"Ref" : "S3Bucket" },
-              {"Fn::Join" : ["",[{"Ref" : "S3Bucket" }, "/*"]]}]
+              {"Fn::GetAtt" : ["S3", "Arn"]},
+              {"Fn::Join" : ["",[{"Fn::GetAtt" : ["S3", "Arn"]}, "/*"]]}]
           }]
         }
       }
@@ -625,7 +624,6 @@
   			}
       }
     },
-
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
@@ -637,7 +635,7 @@
     },
     "S3Bucket" : {
       "Description" : "Wordpress S3 Bucket",
-      "Value" : { "Fn::Select" : [ "5", { "Fn::Split": [":", {"Ref" : "S3Bucket" }]}] }
+      "Value" : {"Ref" : "S3"}
     },
     "S3AccessKey" : {
       "Description" : "Access Key for S3 Wordpress User",
