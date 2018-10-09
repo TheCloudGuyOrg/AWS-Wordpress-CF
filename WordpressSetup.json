@@ -558,7 +558,7 @@
               "files" : {
                 "/etc/passwd-s3fs" : {
                   "content" : {"Fn::Join" : ["", [
-                    {"Ref" : "WordpressS3IAMKey"},":", {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}]]},
+                    {"Ref" : "WordpressS3IAMKey"},":", {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}, "\n"]]},
                   "mode" : "000640",
                   "owner" : "root",
                   "group" : "root"
@@ -567,35 +567,32 @@
               "packages" : {
                 "yum" : {
                   "automake" : [],
-                   "fuse" : [],
-                   "fuse-devel" : [],
-                   "gcc-c++" : [],
-                   "git" : [],
-                   "libcurl-devel" : [],
-                   "libxml2-devel" : [],
-                   "make" : [],
-                   "openssl-devel" : []
+                  "fuse" : [],
+                  "fuse-devel" : [],
+                  "gcc-c++" : [],
+                  "git" : [],
+                  "libcurl-devel" : [],
+                  "libxml2-devel" : [],
+                  "make" : [],
+                  "openssl-devel" : []
                 }
               },
+              "sources" : {
+                "/opt" : "https://github.com/s3fs-fuse/s3fs-fuse/archive/master.zip"
+              },
               "commands" : {
-                "01_Clone_s3fs_git" : {
-                  "command" : "git clone https://github.com/s3fs-fuse/s3fs-fuse.git"
-                  },
-                "02_CD_s3fs-fuse" : {
-                  "command" : "cd s3fs-fuse"
+                "02_cd_s3fs" : {
+                  "command" : "cd /opt/s3fs-fuse"
                   },
                 "03_Run_autogen.sh" : {
-                  "command" : "./autogen.sh"
+                  "command" : "sudo ./autogen.sh"
                   },
                 "04_configure" : {
-                  "command" : "./configure --prefix=/usr --with-openssl"
+                  "command" : "sudo ./configure --prefix=/usr --with-openssl"
                   },
                 "05_make" : {
-                  "command" : "make"
+                  "command" : "sudo make & make install"
                   },
-                "06_Run_make" : {
-                  "command" : "sudo make install"
-                  }
                 }
               },
   					"install_wordpress" : {
