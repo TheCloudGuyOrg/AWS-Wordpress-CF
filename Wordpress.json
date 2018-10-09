@@ -561,7 +561,8 @@
   								"httpd" : [],
   								"php" : [],
   								"mysql" : [],
-  								"php-mysql" : []
+  								"php-mysql" : [],
+                  "php-gd" : []
   							}
   						},
   						"sources" : {
@@ -571,6 +572,9 @@
                 "/var/www/html/wp-config.php" : {
                     "content" : { "Fn::Join" : ["", [
                       "<?php\n",
+                      "define('FORCE_SSL_ADMIN', true);\n",
+                      "if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false)\n",
+                      "    $_SERVER['HTTPS']='on';\n",
                       "define('DB_NAME',          '", {"Ref" : "DatabaseName"}, "');\n",
                       "define('DB_USER',          '", {"Ref" : "DatabaseUser"}, "');\n",
                       "define('DB_PASSWORD',      '", {"Ref" : "DatabasePassword" }, "');\n",
