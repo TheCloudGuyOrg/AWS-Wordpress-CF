@@ -414,11 +414,8 @@
         }
       },
       "UpdatePolicy": {
-        "AutoScalingRollingUpdate": {
-          "MinInstancesInService": "1",
-          "MaxBatchSize": "1",
-          "PauseTime" : "PT15M",
-          "WaitOnResourceSignals": "true"
+        "AutoScalingReplacingUpdate" : {
+          "WillReplace" : "true",
         }
       }
     },
@@ -578,23 +575,36 @@
                 }
               },
               "sources" : {
-                "/opt" : "https://github.com/s3fs-fuse/s3fs-fuse/archive/master.zip"
+  							"/usr/src/s3fs" : "https://github.com/s3fs-fuse/s3fs-fuse/tarball/master"
               },
               "commands" : {
-                "02_cd_s3fs" : {
-                  "command" : "cd /opt/s3fs-fuse"
-                  },
-                "03_Run_autogen.sh" : {
+                "01_chown" : {
+                  "ignoreErrors" : "true",
+                  "cwd" : "/usr/src",
+                  "command" : "sudo chown -R ec2-user:ec2-user s3fs"
+                },
+                "02_autogen" : {
+                  "ignoreErrors" : "true",
+                  "cwd" : "/usr/src/s3fs",
                   "command" : "sudo ./autogen.sh"
-                  },
-                "04_configure" : {
-                  "command" : "sudo ./configure --prefix=/usr --with-openssl"
-                  },
-                "05_make" : {
-                  "command" : "sudo make & make install"
-                  },
+                },
+                "03_configure" : {
+                  "ignoreErrors" : "true",
+                  "cwd" : "/usr/src/s3fs",
+                  "command" : "sudo ./configure"
+                },
+                "04_make" : {
+                  "ignoreErrors" : "true",
+                  "cwd" : "/usr/src/s3fs",
+                  "command" : "sudo make install"
+                },
+                "05_mount" : {
+                  "ignoreErrors" : "true",
+                  "command" : {"Fn::Join" : ["", [
+                    "sudo /usr/local/bin/s3fs ", {"Ref" : "S3"}, " -o use_cache=/tmp -o allow_other -o uid=1001 -o mp_umask=002 -o multireq_max=5 -o nonempty /var/www/html" ]]}
                 }
-              },
+              }
+            },
   					"install_wordpress" : {
   						"packages" : {
   							"yum" : {
