@@ -288,8 +288,7 @@
             "Action": [ "s3:*" ],
             "Resource": [
               {"Fn::GetAtt" : ["S3", "Arn"]},
-              {"Fn::Join" : ["",[{"Fn::GetAtt" : ["S3", "Arn"]}, "/*"]]}]
-          }]
+              {"Fn::Join" : ["",[{"Fn::GetAtt" : ["S3", "Arn"]}, "/*"]]}]}]
         }
       }
     },
@@ -339,8 +338,7 @@
         "TargetGroupAttributes" :
           [ { "Key" : "stickiness.enabled", "Value" : "true" },
             { "Key" : "stickiness.type", "Value" : "lb_cookie" },
-            { "Key" : "stickiness.lb_cookie.duration_seconds", "Value" : "30" }
-        ]
+            { "Key" : "stickiness.lb_cookie.duration_seconds", "Value" : "30" }]
       }
     },
     "WordpressLBSecurityGroup" : {
@@ -406,8 +404,7 @@
         "MaxSize" : 1,
         "DesiredCapacity" : 1,
         "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ],
-        "MetricsCollection" : [{"Granularity" : "1Minute"}]
-      },
+        "MetricsCollection" : [{"Granularity" : "1Minute"}]},
       "CreationPolicy" : {
         "ResourceSignal" : {
           "Timeout" : "PT15M"
@@ -415,7 +412,7 @@
       },
       "UpdatePolicy": {
         "AutoScalingReplacingUpdate" : {
-          "WillReplace" : "true",
+          "WillReplace" : "true"
         }
       }
     },
@@ -476,8 +473,7 @@
         "SecurityGroupIngress" : [{
           "IpProtocol" : "tcp",
           "FromPort" : "80", "ToPort" : "80",
-          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"
-            ]}]}}],
+          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"]}]}}],
         "VpcId" : { "Ref" : "VpcId" }
       }
     },
@@ -509,8 +505,7 @@
       "Metadata" : {
   				"AWS::CloudFormation::Init" : {
   					"configSets" : {
-  						"wordpress" : ["configure_cfn", "setup_s3fs", "install_wordpress"]
-  					},
+  						"wordpress" : ["configure_cfn", "setup_s3fs", "install_wordpress"]},
   					"configure_cfn" : {
   						"files" : {
   							"/etc/cfn/hooks.d/cfn-auto-reloader.conf" : {
@@ -523,7 +518,7 @@
   									" --resource LaunchConfig",
   									" --configsets wordpress",
   									" --region ", {"Ref" : "AWS::Region"}, "\n"
-  								]]},
+                  ]]},
   								"mode" : "000400",
   								"owner" : "root",
   								"group" : "root"
@@ -535,7 +530,7 @@
   									"region=", {"Ref" : "AWS::Region"}, "\n",
   									"verbose=true\n",
   									"interval=5\n"
-  								]]},
+                  ]]},
   								"mode" : "000400",
   								"owner" : "root",
   								"group" : "root"
@@ -555,14 +550,30 @@
               "files" : {
                 "/etc/passwd-s3fs" : {
                   "content" : {"Fn::Join" : ["", [
-                    {"Ref" : "WordpressS3IAMKey"},":", {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}, "\n"]]},
+                    {"Ref" : "WordpressS3IAMKey"},":", {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}, "\n"
+                  ]]},
                   "mode" : "000640",
+                  "owner" : "root",
+                  "group" : "root"
+                },
+                "/etc/fstab" : {
+                  "content" : {"Fn::Join" : ["", [
+                    "#\n",
+                    "LABEL=/     /           ext4    defaults,noatime  1   1\n",
+                    "tmpfs       /dev/shm    tmpfs   defaults        0   0\n",
+                    "devpts      /dev/pts    devpts  gid=5,mode=620  0   0\n",
+                    "sysfs       /sys        sysfs   defaults        0   0\n",
+                    "proc        /proc       proc    defaults        0   0\n",
+                    "s3fs#", {"Ref" : "S3"}, " /var/www/html fuse allow_other,use_cache=/tmp,nonempty,multireq_max=5 0 0\n"
+                    ]]},
+                  "mode" : "000644",
                   "owner" : "root",
                   "group" : "root"
                 }
               },
               "packages" : {
                 "yum" : {
+                  "httpd" : [],
                   "automake" : [],
                   "fuse" : [],
                   "fuse-devel" : [],
@@ -596,10 +607,11 @@
                 "04_make" : {
                   "ignoreErrors" : "true",
                   "cwd" : "/usr/src/s3fs",
-                  "command" : "sudo make install"
+                  "command" : "sudo make && make install"
                 },
                 "05_mount" : {
                   "ignoreErrors" : "true",
+                  "cwd" : "~",
                   "command" : {"Fn::Join" : ["", [
                     "sudo /usr/local/bin/s3fs ", {"Ref" : "S3"}, " -o use_cache=/tmp -o allow_other -o uid=1001 -o mp_umask=002 -o multireq_max=5 -o nonempty /var/www/html" ]]}
                 }
@@ -609,12 +621,12 @@
   						"packages" : {
   							"yum" : {
   								"httpd" : [],
-  								"php" : [],
+                  "php" : [],
   								"mysql" : [],
   								"php-mysql" : [],
                   "php-gd" : []
-  							}
-              },
+  						}
+            },
   						"sources" : {
   							"/var/www/html" : "http://wordpress.org/latest.tar.gz"
   						},
@@ -687,14 +699,6 @@
     "S3Bucket" : {
       "Description" : "Wordpress S3 Bucket",
       "Value" : {"Ref" : "S3"}
-    },
-    "S3AccessKey" : {
-      "Description" : "Access Key for S3 Wordpress User",
-      "Value" : {"Ref" : "WordpressS3IAMKey"}
-    },
-    "S3SecretKey" : {
-      "Description" : "Keypair for S3 Wordpress User",
-      "Value" : {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}
     }
   }
 }
