@@ -31,6 +31,10 @@
       "Description" : "The list of SubnetIds in your Virtual Private Cloud (VPC)",
       "ConstraintDescription" : "must be a list of at least two existing subnets associated with at least two different availability zones. They should be residing in the selected Virtual Private Cloud."
     },
+    "EFSSubnetA" : {
+      "Type" : "String",
+      "Description" : "Private Subnet for EFS Share in Availability Zone A"
+    },
     "SSHSecurityGroup" :  {
       "Type" : "AWS::EC2::SecurityGroup::Id",
       "Default" : "",
@@ -139,7 +143,7 @@
     "AWS::CloudFormation::Interface" : {
       "ParameterGroups" : [{
         "Label" : { "default":"Precreated Resources" },
-        "Parameters" : [ "DNSURL", "Certificate", "S3Bucket" ]
+        "Parameters" : [ "DNSURL", "Certificate","EFSSubnetA" ]
         },
         {
         "Label" : { "default":"Environment Configuration" },
@@ -156,9 +160,10 @@
       "ParameterLabels" : {
         "DNSURL" : { "default" : "Route53 Hosted Zone" },
         "Certificate" : { "default" : "HTTPS Certificate" },
-        "S3Bucket" : { "default" : "S3 Bucket for WP Files" },
         "EnvironmentSize" : { "default" : "Size of WP Environment" },
         "VpcId" : { "default" : "Deploy to VPC" },
+        "Subnets" : { "default" : "WebServer Subnets"},
+        "EFSSubnetA" : { "default" : "EFS Subnet"},
         "SSHSecurityGroup" : { "default" : "SSH Security Group" },
         "DatabaseName" : { "default" : "Database Name" },
         "DatabaseUser" : { "default" : "Database User" },
@@ -283,22 +288,74 @@
           "StorageType" : "gp2"
         }
     },
-    "ELBTargetGroup" : {
-      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+    "FileSystem" : {
+      "Type" : "AWS::EFS::FileSystem",
       "Properties" : {
-        "Name" : {"Ref" : "DatabaseName"},
-        "HealthCheckPath" : "/wordpress/wp-admin/install.php",
-        "HealthCheckIntervalSeconds" : 10,
-        "HealthCheckTimeoutSeconds" : 5,
-        "HealthyThresholdCount" : 2,
-        "Port" : 80,
-        "Protocol" : "HTTP",
-        "UnhealthyThresholdCount" : 5,
-        "VpcId" : {"Ref" : "VpcId"},
-        "TargetGroupAttributes" :
-          [ { "Key" : "stickiness.enabled", "Value" : "true" },
-            { "Key" : "stickiness.type", "Value" : "lb_cookie" },
-            { "Key" : "stickiness.lb_cookie.duration_seconds", "Value" : "30" }]
+        "Encrypted" : true,
+        "FileSystemTags" : [{
+          "Key" : "Name",
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "EFS"]]}}],
+        "KmsKeyId" : {"Fn::GetAtt": ["KMSKey","Arn"]},
+        "ThroughputMode" : "bursting"
+      }
+    },
+    "MountTargetA": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetA" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "KMSKey" : {
+      "Type": "AWS::KMS::Key",
+      "Properties": {
+        "KeyPolicy": {
+          "Version": "2012-10-17",
+          "Id": {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "KMSPolicy"]]},
+          "Statement": [{
+            "Sid": "Allow administration of the key",
+            "Effect": "Allow",
+            "Principal": {
+            "AWS": {"Fn::Join": ["",["arn:aws:iam::",{"Ref": "AWS::AccountId"},":root"]]}},
+            "Action": [
+              "kms:*"
+                ],
+            "Resource": "*"
+          }]
+        }
+      }
+    },
+    "WordpressEFSSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable NFS access via port 2049",
+        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "EFSSecurityGroup"]]},
+        "Tags" : [{
+          "Key" : "Name",
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "EFSSecurityGroup"]]}
+          }],
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "2049",
+          "ToPort" : "2049",
+          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"]}]}}],
+        "VpcId" : { "Ref" : "VpcId" }
+        }
+      },
+    "WordpressSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]},
+        "Tags" : [{
+          "Key" : "Name",
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]}}],
+        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer",
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "80", "ToPort" : "80",
+          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"]}]}}],
+        "VpcId" : { "Ref" : "VpcId" }
       }
     },
     "WordpressLBSecurityGroup" : {
@@ -329,6 +386,24 @@
         "Name" : {"Ref" : "DatabaseName"},
         "SecurityGroups" : [{"Ref" : "WordpressLBSecurityGroup"}],
         "Subnets" : { "Ref" : "Subnets"}
+      }
+    },
+    "ELBTargetGroup" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties" : {
+        "Name" : {"Ref" : "DatabaseName"},
+        "HealthCheckPath" : "/wordpress/wp-admin/install.php",
+        "HealthCheckIntervalSeconds" : 10,
+        "HealthCheckTimeoutSeconds" : 5,
+        "HealthyThresholdCount" : 2,
+        "Port" : 80,
+        "Protocol" : "HTTP",
+        "UnhealthyThresholdCount" : 5,
+        "VpcId" : {"Ref" : "VpcId"},
+        "TargetGroupAttributes" :
+          [ { "Key" : "stickiness.enabled", "Value" : "true" },
+            { "Key" : "stickiness.type", "Value" : "lb_cookie" },
+            { "Key" : "stickiness.lb_cookie.duration_seconds", "Value" : "30" }]
       }
     },
     "HTTPELBListener" : {
@@ -420,21 +495,6 @@
          "Threshold": "50",
          "ComparisonOperator": "LessThanThreshold",
          "AlarmActions": [ { "Ref": "DecreaseAutoScalingPolicy" } ]
-      }
-    },
-    "WordpressSecurityGroup" : {
-      "Type" : "AWS::EC2::SecurityGroup",
-      "Properties" : {
-        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]},
-        "Tags" : [{
-          "Key" : "Name",
-          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]}}],
-        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer",
-        "SecurityGroupIngress" : [{
-          "IpProtocol" : "tcp",
-          "FromPort" : "80", "ToPort" : "80",
-          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"]}]}}],
-        "VpcId" : { "Ref" : "VpcId" }
       }
     },
     "LaunchConfig" : {
