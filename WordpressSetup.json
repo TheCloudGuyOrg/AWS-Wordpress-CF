@@ -503,7 +503,7 @@
           "ImageId" : {"Fn::FindInMap" : ["RegionMap", {"Ref" : "AWS::Region"}, "AMALINUX"]},
           "InstanceType" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "EC2"]},
           "KeyName" : {"Ref" : "KeyPair"},
-          "SecurityGroups" : [ {"Ref" : "SSHSecurityGroup"}, {"Ref" : "WordpressSecurityGroup"}],
+          "SecurityGroups" : [ {"Ref" : "SSHSecurityGroup"}, {"Ref" : "WordpressSecurityGroup"}, {"Ref" : "WordpressEFSSecurityGroup"}],
           "UserData" : {"Fn::Base64" : {"Fn::Join" : ["", [
   						"#!/bin/bash", "\n",
               "yum update -y aws-cfn-bootstrap", "\n",
@@ -576,7 +576,7 @@
                     "devpts      /dev/pts    devpts  gid=5,mode=620  0   0\n",
                     "sysfs       /sys        sysfs   defaults        0   0\n",
                     "proc        /proc       proc    defaults        0   0\n",
-                    {"Ref" : "FileSystem"}, ":/ /var/www/html efs defaults, netdev 0 0\n"
+                    "fs-6dec0027:/ /var/www/html efs tls,_netdev 0 0\n"
                     ]]},
                   "mode" : "000644",
                   "owner" : "root",
@@ -673,6 +673,10 @@
     "wpadmin" : {
       "Description" : "Admin Login URL",
       "Value" : {"Fn::Join" : ["",["https://www.", {"Ref" : "DNSURL"}, "/wp-login.php"]]}
+    },
+    "fdDebug" : {
+      "Description" : "FSDebug",
+      "Value" : {"Ref" : "FileSystem" }
     }
   }
 }
