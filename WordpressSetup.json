@@ -33,7 +33,7 @@
     },
     "EFSSubnetA" : {
       "Type" : "String",
-      "Description" : "Private Subnet for EFS Share in Availability Zone A"
+      "Description" : "Public Subnet for EFS Share in Availability Zone A"
     },
     "SSHSecurityGroup" :  {
       "Type" : "AWS::EC2::SecurityGroup::Id",
@@ -339,7 +339,7 @@
           "IpProtocol" : "tcp",
           "FromPort" : "2049",
           "ToPort" : "2049",
-          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"]}]}}],
+          "SourceSecurityGroupId" : { "Ref" : "WordpressSecurityGroup" }}],
         "VpcId" : { "Ref" : "VpcId" }
         }
       },
@@ -525,7 +525,7 @@
       "Metadata" : {
   				"AWS::CloudFormation::Init" : {
   					"configSets" : {
-  						"wordpress" : ["configure_cfn", "install_wordpress"]},
+  						"wordpress" : ["configure_cfn", "configure_efs", "install_wordpress"]},
   					"configure_cfn" : {
   						"files" : {
   							"/etc/cfn/hooks.d/cfn-auto-reloader.conf" : {
@@ -566,7 +566,36 @@
   							}
   						}
   					},
-  					"install_wordpress" : {
+            "configure_efs" : {
+              "files" : {
+                "/etc/fstab" : {
+                  "content" : {"Fn::Join" : ["", [
+                    "#\n",
+                    "LABEL=/     /           ext4    defaults,noatime  1   1\n",
+                    "tmpfs       /dev/shm    tmpfs   defaults        0   0\n",
+                    "devpts      /dev/pts    devpts  gid=5,mode=620  0   0\n",
+                    "sysfs       /sys        sysfs   defaults        0   0\n",
+                    "proc        /proc       proc    defaults        0   0\n",
+                    {"Ref" : "FileSystem"}, ":/ /var/www/html efs defaults, netdev 0 0\n"
+                    ]]},
+                  "mode" : "000644",
+                  "owner" : "root",
+                  "group" : "root"
+                }
+              },
+              "packages" : {
+  							"yum" : {
+  								"httpd" : [],
+                  "amazon-efs-utils" : []
+                }
+              },
+              "commands" : {
+                "01_MountEFS" : {
+                  "command" : {"Fn::Join" : ["",["sudo mount -t efs -o tls ",{"Ref" : "FileSystem" }, ":/ /var/www/html"]]}
+                }
+              }
+            },
+            "install_wordpress" : {
   						"packages" : {
   							"yum" : {
   								"httpd" : [],
