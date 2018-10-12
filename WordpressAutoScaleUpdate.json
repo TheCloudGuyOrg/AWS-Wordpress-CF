@@ -696,10 +696,6 @@
     "wpadmin" : {
       "Description" : "Admin Login URL",
       "Value" : {"Fn::Join" : ["",["https://www.", {"Ref" : "DNSURL"}, "/wp-login.php"]]}
-    },
-    "fdDebug" : {
-      "Description" : "FSDebug",
-      "Value" : {"Ref" : "FileSystem" }
     }
   }
 }
