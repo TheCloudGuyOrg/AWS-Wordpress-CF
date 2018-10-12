@@ -35,6 +35,26 @@
       "Type" : "String",
       "Description" : "Public Subnet for EFS Share in Availability Zone A"
     },
+    "EFSSubnetB" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone B"
+    },
+    "EFSSubnetC" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone C"
+    },
+    "EFSSubnetD" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone D"
+    },
+    "EFSSubnetE" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone E"
+    },
+    "EFSSubnetF" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone F"
+    },
     "SSHSecurityGroup" :  {
       "Type" : "AWS::EC2::SecurityGroup::Id",
       "Default" : "",
@@ -143,7 +163,7 @@
     "AWS::CloudFormation::Interface" : {
       "ParameterGroups" : [{
         "Label" : { "default":"Precreated Resources" },
-        "Parameters" : [ "DNSURL", "Certificate","EFSSubnetA" ]
+        "Parameters" : [ "DNSURL", "Certificate" ]
         },
         {
         "Label" : { "default":"Environment Configuration" },
@@ -152,6 +172,10 @@
         {
         "Label" : { "default" : "DataBase Configuration" },
         "Parameters" : [ "DatabaseName", "DatabaseUser", "DatabasePassword", "MultiAZDatabase", "SnapToRestore" ]
+        },
+        {
+        "Label" : { "default":"EFS Mount Subnets" },
+        "Parameters" : [ "EFSSubnetA", "EFSSubnetB", "EFSSubnetC", "EFSSubnetD", "EFSSubnetE", "EFSSubnetF" ]
         },
         {
         "Label" : { "default":"WordPress Salt Values" },
@@ -163,7 +187,12 @@
         "EnvironmentSize" : { "default" : "Size of WP Environment" },
         "VpcId" : { "default" : "Deploy to VPC" },
         "Subnets" : { "default" : "WebServer Subnets"},
-        "EFSSubnetA" : { "default" : "EFS Subnet"},
+        "EFSSubnetA" : { "default" : "EFS Subnet A"},
+        "EFSSubnetB" : { "default" : "EFS Subnet B"},
+        "EFSSubnetC" : { "default" : "EFS Subnet C"},
+        "EFSSubnetD" : { "default" : "EFS Subnet D"},
+        "EFSSubnetE" : { "default" : "EFS Subnet E"},
+        "EFSSubnetF" : { "default" : "EFS Subnet F"},
         "SSHSecurityGroup" : { "default" : "SSH Security Group" },
         "DatabaseName" : { "default" : "Database Name" },
         "DatabaseUser" : { "default" : "Database User" },
@@ -304,6 +333,46 @@
       "Properties": {
         "FileSystemId": { "Ref": "FileSystem" },
         "SubnetId": { "Ref": "EFSSubnetA" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetB": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetB" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetC": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetC" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetD": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetD" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetE": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetE" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetF": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetF" },
         "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
         }
     },
@@ -576,7 +645,7 @@
                     "devpts      /dev/pts    devpts  gid=5,mode=620  0   0\n",
                     "sysfs       /sys        sysfs   defaults        0   0\n",
                     "proc        /proc       proc    defaults        0   0\n",
-                    "fs-6dec0027:/ /var/www/html efs tls,_netdev 0 0\n"
+                    {"Ref" : "FileSystem"} ":/ /var/www/html efs tls,_netdev 0 0\n"
                     ]]},
                   "mode" : "000644",
                   "owner" : "root",

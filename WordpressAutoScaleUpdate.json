@@ -14,11 +14,6 @@
       "Default" : "",
       "Description" : "Certificate ARN for HTTPS."
     },
-    "S3Bucket" : {
-      "Type" : "String",
-      "Default" : "",
-      "Description" : "S3 Bucket ARN for Wordpress Files."
-    },
     "EnvironmentSize": {
       "Description" : "Select the size of Wordpress enviroment to create",
       "Type" : "String",
@@ -35,6 +30,30 @@
       "Type" : "List<AWS::EC2::Subnet::Id>",
       "Description" : "The list of SubnetIds in your Virtual Private Cloud (VPC)",
       "ConstraintDescription" : "must be a list of at least two existing subnets associated with at least two different availability zones. They should be residing in the selected Virtual Private Cloud."
+    },
+    "EFSSubnetA" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone A"
+    },
+    "EFSSubnetB" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone B"
+    },
+    "EFSSubnetC" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone C"
+    },
+    "EFSSubnetD" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone D"
+    },
+    "EFSSubnetE" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone E"
+    },
+    "EFSSubnetF" : {
+      "Type" : "String",
+      "Description" : "Public Subnet for EFS Share in Availability Zone F"
     },
     "SSHSecurityGroup" :  {
       "Type" : "AWS::EC2::SecurityGroup::Id",
@@ -144,7 +163,7 @@
     "AWS::CloudFormation::Interface" : {
       "ParameterGroups" : [{
         "Label" : { "default":"Precreated Resources" },
-        "Parameters" : [ "DNSURL", "Certificate", "S3Bucket" ]
+        "Parameters" : [ "DNSURL", "Certificate" ]
         },
         {
         "Label" : { "default":"Environment Configuration" },
@@ -155,15 +174,25 @@
         "Parameters" : [ "DatabaseName", "DatabaseUser", "DatabasePassword", "MultiAZDatabase", "SnapToRestore" ]
         },
         {
+        "Label" : { "default":"EFS Mount Subnets" },
+        "Parameters" : [ "EFSSubnetA", "EFSSubnetB", "EFSSubnetC", "EFSSubnetD", "EFSSubnetE", "EFSSubnetF" ]
+        },
+        {
         "Label" : { "default":"WordPress Salt Values" },
         "Parameters" : [ "AuthKey", "SecureAuthKey", "LoggedInKey", "NonceKey", "AuthSalt", "SecureAuthSalt", "LoggedInSalt", "NonceSalt" ]
         }],
       "ParameterLabels" : {
         "DNSURL" : { "default" : "Route53 Hosted Zone" },
         "Certificate" : { "default" : "HTTPS Certificate" },
-        "S3Bucket" : { "default" : "S3 Bucket for WP Files" },
         "EnvironmentSize" : { "default" : "Size of WP Environment" },
         "VpcId" : { "default" : "Deploy to VPC" },
+        "Subnets" : { "default" : "WebServer Subnets"},
+        "EFSSubnetA" : { "default" : "EFS Subnet A"},
+        "EFSSubnetB" : { "default" : "EFS Subnet B"},
+        "EFSSubnetC" : { "default" : "EFS Subnet C"},
+        "EFSSubnetD" : { "default" : "EFS Subnet D"},
+        "EFSSubnetE" : { "default" : "EFS Subnet E"},
+        "EFSSubnetF" : { "default" : "EFS Subnet F"},
         "SSHSecurityGroup" : { "default" : "SSH Security Group" },
         "DatabaseName" : { "default" : "Database Name" },
         "DatabaseUser" : { "default" : "Database User" },
@@ -257,43 +286,6 @@
   },
 
   "Resources" : {
-    "WordPressS3IAMUser" : {
-      "Type": "AWS::IAM::User",
-      "Properties": {
-        "UserName": {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "S3IAMUser"]]}
-      }
-    },
-    "WordpressS3IAMKey" : {
-      "Type": "AWS::IAM::AccessKey",
-      "Properties": {
-        "UserName": {"Ref" : "WordPressS3IAMUser"}
-      }
-    },
-    "WordPressS3IAMPolicy" : {
-      "Type" : "AWS::IAM::Policy",
-      "Properties" : {
-        "PolicyName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "S3IAMPolicy"]]},
-        "Users" : [{ "Ref" : "WordPressS3IAMUser" }],
-        "PolicyDocument" : {
-          "Version": "2012-10-17",
-          "Statement": [{
-            "Effect": "Allow",
-            "Action": [
-              "s3:ListAllMyBuckets",
-              "s3:HeadBucket"
-              ],
-            "Resource": "*"
-            },
-            {
-            "Effect": "Allow",
-            "Action": [ "s3:*" ],
-            "Resource": [
-              {"Ref" : "S3Bucket" },
-              {"Fn::Join" : ["",[{"Ref" : "S3Bucket" }, "/*"]]}]
-          }]
-        }
-      }
-    },
     "DNSAddress" : {
       "Type" : "AWS::Route53::RecordSet",
       "Properties" : {
@@ -307,7 +299,7 @@
     },
     "DB" : {
         "Type" : "AWS::RDS::DBInstance",
-        "DeletionPolicy" : "Delete",
+        "DeletionPolicy" : "Snapshot",
         "Properties" : {
           "AllocatedStorage" : "20",
           "AllowMajorVersionUpgrade" : true,
@@ -325,23 +317,114 @@
           "StorageType" : "gp2"
         }
     },
-    "ELBTargetGroup" : {
-      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+    "FileSystem" : {
+      "Type" : "AWS::EFS::FileSystem",
       "Properties" : {
-        "Name" : {"Ref" : "DatabaseName"},
-        "HealthCheckPath" : "/wordpress/wp-admin/install.php",
-        "HealthCheckIntervalSeconds" : 10,
-        "HealthCheckTimeoutSeconds" : 5,
-        "HealthyThresholdCount" : 2,
-        "Port" : 80,
-        "Protocol" : "HTTP",
-        "UnhealthyThresholdCount" : 5,
-        "VpcId" : {"Ref" : "VpcId"},
-        "TargetGroupAttributes" :
-          [ { "Key" : "stickiness.enabled", "Value" : "true" },
-            { "Key" : "stickiness.type", "Value" : "lb_cookie" },
-            { "Key" : "stickiness.lb_cookie.duration_seconds", "Value" : "30" }
-        ]
+        "Encrypted" : true,
+        "FileSystemTags" : [{
+          "Key" : "Name",
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "EFS"]]}}],
+        "KmsKeyId" : {"Fn::GetAtt": ["KMSKey","Arn"]},
+        "ThroughputMode" : "bursting"
+      }
+    },
+    "MountTargetA": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetA" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetB": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetB" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetC": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetC" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetD": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetD" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetE": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetE" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "MountTargetF": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": { "Ref": "FileSystem" },
+        "SubnetId": { "Ref": "EFSSubnetF" },
+        "SecurityGroups": [ { "Ref": "WordpressEFSSecurityGroup" } ]
+        }
+    },
+    "KMSKey" : {
+      "Type": "AWS::KMS::Key",
+      "Properties": {
+        "KeyPolicy": {
+          "Version": "2012-10-17",
+          "Id": {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "KMSPolicy"]]},
+          "Statement": [{
+            "Sid": "Allow administration of the key",
+            "Effect": "Allow",
+            "Principal": {
+            "AWS": {"Fn::Join": ["",["arn:aws:iam::",{"Ref": "AWS::AccountId"},":root"]]}},
+            "Action": [
+              "kms:*"
+                ],
+            "Resource": "*"
+          }]
+        }
+      }
+    },
+    "WordpressEFSSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable NFS access via port 2049",
+        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "EFSSecurityGroup"]]},
+        "Tags" : [{
+          "Key" : "Name",
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "EFSSecurityGroup"]]}
+          }],
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "2049",
+          "ToPort" : "2049",
+          "SourceSecurityGroupId" : { "Ref" : "WordpressSecurityGroup" }}],
+        "VpcId" : { "Ref" : "VpcId" }
+        }
+      },
+    "WordpressSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]},
+        "Tags" : [{
+          "Key" : "Name",
+          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]}}],
+        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer",
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "80", "ToPort" : "80",
+          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"]}]}}],
+        "VpcId" : { "Ref" : "VpcId" }
       }
     },
     "WordpressLBSecurityGroup" : {
@@ -374,6 +457,24 @@
         "Subnets" : { "Ref" : "Subnets"}
       }
     },
+    "ELBTargetGroup" : {
+      "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties" : {
+        "Name" : {"Ref" : "DatabaseName"},
+        "HealthCheckPath" : "/wordpress/wp-admin/install.php",
+        "HealthCheckIntervalSeconds" : 10,
+        "HealthCheckTimeoutSeconds" : 5,
+        "HealthyThresholdCount" : 2,
+        "Port" : 80,
+        "Protocol" : "HTTP",
+        "UnhealthyThresholdCount" : 5,
+        "VpcId" : {"Ref" : "VpcId"},
+        "TargetGroupAttributes" :
+          [ { "Key" : "stickiness.enabled", "Value" : "true" },
+            { "Key" : "stickiness.type", "Value" : "lb_cookie" },
+            { "Key" : "stickiness.lb_cookie.duration_seconds", "Value" : "30" }]
+      }
+    },
     "HTTPELBListener" : {
       "Type" : "AWS::ElasticLoadBalancingV2::Listener",
       "Properties" : {
@@ -403,23 +504,19 @@
       "Properties" : {
         "VPCZoneIdentifier" : { "Ref" : "Subnets" },
         "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
-        "MinSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMin"]},
-        "MaxSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMax"]},
-        "DesiredCapacity" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMin"]},
+        "MinSize" : 1,
+        "MaxSize" : 1,
+        "DesiredCapacity" : 1,
         "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ],
-        "MetricsCollection" : [{"Granularity" : "1Minute"}]
-      },
+        "MetricsCollection" : [{"Granularity" : "1Minute"}]},
       "CreationPolicy" : {
         "ResourceSignal" : {
           "Timeout" : "PT15M"
         }
       },
       "UpdatePolicy": {
-        "AutoScalingRollingUpdate": {
-          "MinInstancesInService": "1",
-          "MaxBatchSize": "1",
-          "PauseTime" : "PT15M",
-          "WaitOnResourceSignals": "true"
+        "AutoScalingReplacingUpdate" : {
+          "WillReplace" : "true"
         }
       }
     },
@@ -469,29 +566,13 @@
          "AlarmActions": [ { "Ref": "DecreaseAutoScalingPolicy" } ]
       }
     },
-    "WordpressSecurityGroup" : {
-      "Type" : "AWS::EC2::SecurityGroup",
-      "Properties" : {
-        "GroupName" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]},
-        "Tags" : [{
-          "Key" : "Name",
-          "Value" : {"Fn::Join" : ["",[{"Ref" : "DatabaseName" }, "SecurityGroup"]]}}],
-        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer",
-        "SecurityGroupIngress" : [{
-          "IpProtocol" : "tcp",
-          "FromPort" : "80", "ToPort" : "80",
-          "SourceSecurityGroupId" : {"Fn::Select" : [0, {"Fn::GetAtt" : ["ElasticLoadBalancer", "SecurityGroups"
-            ]}]}}],
-        "VpcId" : { "Ref" : "VpcId" }
-      }
-    },
     "LaunchConfig" : {
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Properties" : {
           "ImageId" : {"Fn::FindInMap" : ["RegionMap", {"Ref" : "AWS::Region"}, "AMALINUX"]},
           "InstanceType" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "EC2"]},
           "KeyName" : {"Ref" : "KeyPair"},
-          "SecurityGroups" : [ {"Ref" : "SSHSecurityGroup"}, {"Ref" : "WordpressSecurityGroup"}],
+          "SecurityGroups" : [ {"Ref" : "SSHSecurityGroup"}, {"Ref" : "WordpressSecurityGroup"}, {"Ref" : "WordpressEFSSecurityGroup"}],
           "UserData" : {"Fn::Base64" : {"Fn::Join" : ["", [
   						"#!/bin/bash", "\n",
               "yum update -y aws-cfn-bootstrap", "\n",
@@ -513,8 +594,7 @@
       "Metadata" : {
   				"AWS::CloudFormation::Init" : {
   					"configSets" : {
-  						"wordpress" : ["configure_cfn", "install_wordpress"]
-  					},
+  						"wordpress" : ["configure_cfn", "configure_efs", "install_wordpress"]},
   					"configure_cfn" : {
   						"files" : {
   							"/etc/cfn/hooks.d/cfn-auto-reloader.conf" : {
@@ -527,7 +607,7 @@
   									" --resource LaunchConfig",
   									" --configsets wordpress",
   									" --region ", {"Ref" : "AWS::Region"}, "\n"
-  								]]},
+                  ]]},
   								"mode" : "000400",
   								"owner" : "root",
   								"group" : "root"
@@ -539,7 +619,7 @@
   									"region=", {"Ref" : "AWS::Region"}, "\n",
   									"verbose=true\n",
   									"interval=5\n"
-  								]]},
+                  ]]},
   								"mode" : "000400",
   								"owner" : "root",
   								"group" : "root"
@@ -555,16 +635,45 @@
   							}
   						}
   					},
-  					"install_wordpress" : {
+            "configure_efs" : {
+              "files" : {
+                "/etc/fstab" : {
+                  "content" : {"Fn::Join" : ["", [
+                    "#\n",
+                    "LABEL=/     /           ext4    defaults,noatime  1   1\n",
+                    "tmpfs       /dev/shm    tmpfs   defaults        0   0\n",
+                    "devpts      /dev/pts    devpts  gid=5,mode=620  0   0\n",
+                    "sysfs       /sys        sysfs   defaults        0   0\n",
+                    "proc        /proc       proc    defaults        0   0\n",
+                    {"Ref" : "FileSystem"} ":/ /var/www/html efs tls,_netdev 0 0\n"
+                    ]]},
+                  "mode" : "000644",
+                  "owner" : "root",
+                  "group" : "root"
+                }
+              },
+              "packages" : {
+  							"yum" : {
+  								"httpd" : [],
+                  "amazon-efs-utils" : []
+                }
+              },
+              "commands" : {
+                "01_MountEFS" : {
+                  "command" : {"Fn::Join" : ["",["sudo mount -t efs -o tls ",{"Ref" : "FileSystem" }, ":/ /var/www/html"]]}
+                }
+              }
+            },
+            "install_wordpress" : {
   						"packages" : {
   							"yum" : {
   								"httpd" : [],
-  								"php" : [],
+                  "php" : [],
   								"mysql" : [],
   								"php-mysql" : [],
                   "php-gd" : []
-  							}
-  						},
+  						}
+            },
   						"sources" : {
   							"/var/www/html" : "http://wordpress.org/latest.tar.gz"
   						},
@@ -625,7 +734,6 @@
   			}
       }
     },
-
   "Outputs" : {
     "wproot" : {
       "Description" : "Access URL for wordpress",
@@ -635,17 +743,9 @@
       "Description" : "Admin Login URL",
       "Value" : {"Fn::Join" : ["",["https://www.", {"Ref" : "DNSURL"}, "/wp-login.php"]]}
     },
-    "S3Bucket" : {
-      "Description" : "Wordpress S3 Bucket",
-      "Value" : { "Fn::Select" : [ "5", { "Fn::Split": [":", {"Ref" : "S3Bucket" }]}] }
-    },
-    "S3AccessKey" : {
-      "Description" : "Access Key for S3 Wordpress User",
-      "Value" : {"Ref" : "WordpressS3IAMKey"}
-    },
-    "S3SecretKey" : {
-      "Description" : "Keypair for S3 Wordpress User",
-      "Value" : {"Fn::GetAtt" : ["WordpressS3IAMKey", "SecretAccessKey"]}
+    "fdDebug" : {
+      "Description" : "FSDebug",
+      "Value" : {"Ref" : "FileSystem" }
     }
   }
 }
