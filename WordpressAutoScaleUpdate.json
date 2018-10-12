@@ -504,9 +504,9 @@
       "Properties" : {
         "VPCZoneIdentifier" : { "Ref" : "Subnets" },
         "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
-        "MinSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "SMin"]},
+        "MinSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMin"]},
         "MaxSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMax"]},
-        "DesiredCapacity" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "SMin"]},
+        "DesiredCapacity" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMin"]},
         "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ],
         "MetricsCollection" : [{"Granularity" : "1Minute"}]},
       "CreationPolicy" : {
