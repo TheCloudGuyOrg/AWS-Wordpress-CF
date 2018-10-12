@@ -504,9 +504,9 @@
       "Properties" : {
         "VPCZoneIdentifier" : { "Ref" : "Subnets" },
         "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
-        "MinSize" : 1,
-        "MaxSize" : 1,
-        "DesiredCapacity" : 1,
+        "MinSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "SMin"]},
+        "MaxSize" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "ASMax"]},
+        "DesiredCapacity" : {"Fn::FindInMap" : ["InstanceSize", {"Ref" : "EnvironmentSize"}, "SMin"]},
         "TargetGroupARNs" : [ { "Ref" : "ELBTargetGroup" } ],
         "MetricsCollection" : [{"Granularity" : "1Minute"}]},
       "CreationPolicy" : {
@@ -645,7 +645,7 @@
                     "devpts      /dev/pts    devpts  gid=5,mode=620  0   0\n",
                     "sysfs       /sys        sysfs   defaults        0   0\n",
                     "proc        /proc       proc    defaults        0   0\n",
-                    {"Ref" : "FileSystem"} ":/ /var/www/html efs tls,_netdev 0 0\n"
+                    {"Ref" : "FileSystem"}, ":/ /var/www/html efs tls,_netdev 0 0\n"
                     ]]},
                   "mode" : "000644",
                   "owner" : "root",
@@ -673,54 +673,8 @@
   								"php-mysql" : [],
                   "php-gd" : []
   						}
-            },
-  						"sources" : {
-  							"/var/www/html" : "http://wordpress.org/latest.tar.gz"
-  						},
-              "files" : {
-                "/var/www/html/wp-config.php" : {
-                    "content" : { "Fn::Join" : ["", [
-                      "<?php\n",
-                      "define('FORCE_SSL_ADMIN', true);\n",
-                      "if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false)\n",
-                      "    $_SERVER['HTTPS']='on';\n",
-                      "define('DB_NAME',          '", {"Ref" : "DatabaseName"}, "');\n",
-                      "define('DB_USER',          '", {"Ref" : "DatabaseUser"}, "');\n",
-                      "define('DB_PASSWORD',      '", {"Ref" : "DatabasePassword" }, "');\n",
-                      "define('DB_HOST',          '", {"Fn::GetAtt" : ["DB", "Endpoint.Address"]},"');\n",
-                      "define('DB_CHARSET',       'utf8');\n",
-                      "define('DB_COLLATE',       '');\n",
-                      "define('AUTH_KEY',      '", {"Ref" : "AuthKey" }, "');\n",
-                      "define('SECURE_AUTH_KEY',      '", {"Ref" : "SecureAuthKey" }, "');\n",
-                      "define('LOGGED_IN_KEY',      '", {"Ref" : "LoggedInKey" }, "');\n",
-                      "define('NONCE_KEY',      '", {"Ref" : "NonceKey" }, "');\n",
-                      "define('AUTH_SALT',      '", {"Ref" : "AuthSalt" }, "');\n",
-                      "define('SECURE_AUTH_SALT',      '", {"Ref" : "SecureAuthSalt" }, "');\n",
-                      "define('LOGGED_IN_SALT',      '", {"Ref" : "LoggedInSalt" }, "');\n",
-                      "define('NONCE_SALT',      '", {"Ref" : "NonceSalt" }, "');\n",
-                      "define('WP_DEBUG'          , false);\n",
-                      "define('FS_METHOD',        'direct');\n",
-                      "$table_prefix  = 'wp_';\n",
-                      "if ( !defined('ABSPATH') )\n",
-                      "    define('ABSPATH', dirname(__FILE__) . '/');\n",
-                      "require_once(ABSPATH . 'wp-settings.php');\n"
-                    ]]},
-                    "mode" : "000644",
-                    "owner" : "root",
-                    "group" : "root"
-                        }
-                      },
-              "commands" : {
-                "01_Copy_WP_Files_to_Root" : {
-                    "command" : "sudo mv /var/www/html/wordpress/* /var/www/html"
-                  },
-                "02_Copy_WP_Files_to_Root" : {
-                    "command" : "sudo rm -R /var/www/html/wordpress"
-                  },
-                "03_Set_WebServer_Ownership" : {
-                    "command" : "sudo chown -R apache:apache /var/www/html"
-                  }
-                },
+            }
+          },
   						"services" : {
   							"sysvinit" : {
   								"httpd" : {
@@ -732,7 +686,7 @@
   					}
   				}
   			}
-      }
+
     },
   "Outputs" : {
     "wproot" : {

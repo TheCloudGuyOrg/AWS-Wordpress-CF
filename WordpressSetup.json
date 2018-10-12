@@ -645,7 +645,7 @@
                     "devpts      /dev/pts    devpts  gid=5,mode=620  0   0\n",
                     "sysfs       /sys        sysfs   defaults        0   0\n",
                     "proc        /proc       proc    defaults        0   0\n",
-                    {"Ref" : "FileSystem"} ":/ /var/www/html efs tls,_netdev 0 0\n"
+                    {"Ref" : "FileSystem"}, ":/ /var/www/html efs tls,_netdev 0 0\n"
                     ]]},
                   "mode" : "000644",
                   "owner" : "root",
